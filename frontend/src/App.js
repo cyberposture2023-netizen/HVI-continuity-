@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './services/AuthContext';
 import Dashboard from './pages/Dashboard';
+import AssessmentPage from './pages/AssessmentPage';
 import './App.css';
 
 function App() {
@@ -21,3 +22,4 @@ function App() {
 }
 
 export default App;
+
