@@ -36,6 +36,7 @@
     "dev:workflow": "node dev-workflow.js",
     "status": "node quick-status.js",
     "readiness": "node readiness-verify.js",
-    "server:repair": "node server-repair.js"
+    "server:repair": "node server-repair.js",
+    "start:verify": "node verify-startup.js"
   }
 }
