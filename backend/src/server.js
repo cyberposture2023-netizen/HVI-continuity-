@@ -8,7 +8,7 @@ const connectDB = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const hviRoutes = require('./routes/hviRoutes');
-const simulationRoutes = require('./routes/simulationRoutes');\nconst advancedHviRoutes = require('./routes/advancedHviRoutes');\nconst assessmentRoutes = require('./routes/assessmentRoutes');\nconst assessmentRoutes = require('./routes/assessmentRoutes'); // Add HVI routes
+const simulationRoutes = require('./routes/simulationRoutes');\nconst advancedHviRoutes = require('./routes/advancedHviRoutes');\nconst assessmentRoutes = require('./routes/assessmentRoutes');\nconst reportingRoutes = require('./routes/reportingRoutes');\nconst assessmentRoutes = require('./routes/assessmentRoutes');\nconst reportingRoutes = require('./routes/reportingRoutes'); // Add HVI routes
 
 const app = express();
 
@@ -23,7 +23,7 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/hvi', hviRoutes);
-app.use('/api/simulations', simulationRoutes);\napp.use('/api/advanced-hvi', advancedHviRoutes);\napp.use('/api/assessments', assessmentRoutes);\napp.use('/api/assessments', assessmentRoutes);\napp.use('/api/simulations', simulationRoutes);\napp.use('/api/advanced-hvi', advancedHviRoutes);\napp.use('/api/assessments', assessmentRoutes);\napp.use('/api/assessments', assessmentRoutes); // Add HVI routes
+app.use('/api/simulations', simulationRoutes);\napp.use('/api/advanced-hvi', advancedHviRoutes);\napp.use('/api/assessments', assessmentRoutes);\napp.use('/api/reports', reportingRoutes);\napp.use('/api/assessments', assessmentRoutes);\napp.use('/api/reports', reportingRoutes);\napp.use('/api/simulations', simulationRoutes);\napp.use('/api/advanced-hvi', advancedHviRoutes);\napp.use('/api/assessments', assessmentRoutes);\napp.use('/api/reports', reportingRoutes);\napp.use('/api/assessments', assessmentRoutes);\napp.use('/api/reports', reportingRoutes); // Add HVI routes
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -64,7 +64,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ 
     success: false, 
     error: 'Endpoint not found',
-    availableEndpoints: ['/api/auth', '/api/users', '/api/hvi', '/api/advanced-hvi', '/api/assessments', '/api/simulations', '/api/health']
+    availableEndpoints: ['/api/auth', '/api/users', '/api/hvi', '/api/advanced-hvi', '/api/assessments', '/api/simulations', '/api/reports', '/api/health']
   });
 });
 
@@ -103,6 +103,7 @@ const startServer = async () => {
 };
 
 startServer();
+
 
 
 

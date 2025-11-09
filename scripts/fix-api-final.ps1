@@ -1,3 +1,9 @@
+Write-Host "Completely fixing api.js syntax errors..." -ForegroundColor Yellow
+
+$apiFilePath = "frontend/src/services/api.js"
+
+# Create the correct api.js content with proper template literals
+$correctContent = @'
 import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -87,3 +93,14 @@ export const reportingAPI = {
 };
 
 export default api;
+'@
+
+# Write the correct content to the file
+$correctContent | Out-File -FilePath $apiFilePath -Encoding UTF8
+
+Write-Host "api.js has been completely fixed with proper JavaScript syntax" -ForegroundColor Green
+Write-Host "Template literals and string syntax are now correct" -ForegroundColor Green
+
+Write-Host "`nPlease restart the frontend server:" -ForegroundColor Cyan
+Write-Host "1. Stop current server (Ctrl+C)" -ForegroundColor White
+Write-Host "2. Run: cd frontend && npm start" -ForegroundColor White

@@ -1,0 +1,85 @@
+.hvi-score-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.score-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.score-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.trend-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.trend-text.positive {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.trend-text.negative {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.trend-text.neutral {
+  color: #6b7280;
+}
+
+.score-display {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.score-circle {
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.score-value {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.score-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.score-details {
+  flex-grow: 1;
+}
+
+.risk-level {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.peer-comparison {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.trend-chart {
+  margin-top: 16px;
+}
