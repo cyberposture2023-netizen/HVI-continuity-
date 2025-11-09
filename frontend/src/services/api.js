@@ -2,9 +2,9 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+// Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -13,7 +13,7 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('hvi_token');
+    const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,61 +29,65 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('hvi_token');
+      // Token expired or invalid
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
       window.location.href = '/login';
     }
     return Promise.reject(error);
   }
 );
 
-// API endpoints
+// Auth API calls
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
-  verify: () => api.get('/auth/verify')
+  getProfile: () => api.get('/auth/me'),
+  updateProfile: (profileData) => api.put('/auth/profile', profileData),
 };
 
-export const userAPI = {
-  getAll: () => api.get('/users'),
-  getById: (id) => api.get(`/users/${id}`),
-  create: (userData) => api.post('/users', userData),
-  update: (id, userData) => api.put(`/users/${id}`, userData),
-  getHVIScores: (id) => api.get(`/users/${id}/hvi-scores`)
-};
-
-export const hviAPI = {
-  calculate: (assessmentData) => api.post('/hvi/assessments/calculate', assessmentData),
-  getUserReport: (userId) => api.get(`/hvi/reports/user/${userId}`),
-  getComprehensive: (userId) => api.post(`/advanced-hvi/comprehensive/${userId}`),
-  batchCalculate: (userIds) => api.post('/advanced-hvi/batch', { userIds })
-};
-
-export const simulationAPI = {
-  getAll: () => api.get('/simulations'),
-  getById: (id) => api.get(`/simulations/${id}`),
-  create: (simulationData) => api.post('/simulations', simulationData),
-  launch: (id) => api.post(`/simulations/${id}/launch`),
-  recordAction: (id, userId, actionData) => api.post(`/simulations/${id}/participants/${userId}/actions`, actionData),
-  complete: (id, userId) => api.post(`/simulations/${id}/participants/${userId}/complete`),
-  getAnalytics: (id) => api.get(`/simulations/${id}/analytics`),
-  getTemplates: () => api.get('/simulations/templates')
-};
-
+// Assessment API calls
 export const assessmentAPI = {
-  getAll: () => api.get('/assessments'),
-  getById: (id) => api.get(`/assessments/${id}`),
-  create: (assessmentData) => api.post('/assessments', assessmentData),
-  assign: (id, userIds) => api.post(`/assessments/${id}/assign`, { userIds }),
-  start: (id) => api.post(`/assessments/${id}/start`),
-  submit: (id, responses) => api.post(`/assessments/${id}/submit`, { responses }),
-  getAnalytics: (id) => api.get(`/assessments/${id}/analytics`),
-  getTemplates: () => api.get('/assessments/templates/all')
+  // Start a new assessment
+  startAssessment: (assessmentData) => api.post('/assessments/start', assessmentData),
+  
+  // Submit answers for a dimension
+  submitDimensionAnswers: (assessmentId, dimension, answers) => 
+    api.post(`/assessments/${assessmentId}/dimension/${dimension}`, { answers }),
+  
+  // Get current assessment
+  getCurrentAssessment: () => api.get('/assessments/current'),
+  
+  // Get assessment by ID
+  getAssessment: (assessmentId) => api.get(`/assessments/${assessmentId}`),
+  
+  // Get assessment history
+  getAssessmentHistory: (params) => api.get('/assessments/history', { params }),
+  
+  // Complete assessment
+  completeAssessment: (assessmentId) => api.post(`/assessments/${assessmentId}/complete`),
 };
 
-export const reportingAPI = {
-  getUserReport: (userId) => api.get(`/reports/user/${userId}/comprehensive`),
-  getDepartmentReport: (department) => api.get(`/reports/department/${department}`),
-  getOrganizationReport: () => api.get('/reports/organization/overview')
+// Questions API calls
+export const questionsAPI = {
+  // Get questions for a specific dimension
+  getDimensionQuestions: (dimension) => api.get(`/questions/dimension/${dimension}`),
+  
+  // Get all questions (admin only)
+  getAllQuestions: () => api.get('/questions/all'),
+};
+
+// System API calls
+export const systemAPI = {
+  healthCheck: () => api.get('/health'),
+  systemInfo: () => api.get('/system/info'),
+};
+
+// User scores API calls
+export const scoresAPI = {
+  getUserScores: () => api.get('/users/scores'),
+  getDepartmentScores: () => api.get('/users/department-scores'),
+  getTrendData: () => api.get('/users/score-trends'),
 };
 
 export default api;

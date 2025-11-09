@@ -1,158 +1,147 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAssessment } from '../hooks/useAssessment';
 import './AssessmentPage.css';
 
 const AssessmentPage = () => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState('overview'); // overview, dimension, questions, completion
+  const {
+    currentAssessment,
+    loading,
+    error,
+    startAssessment,
+    submitDimensionAnswers,
+    getDimensionQuestions
+  } = useAssessment();
+
+  const [currentStep, setCurrentStep] = useState('overview');
   const [currentDimension, setCurrentDimension] = useState(null);
-  const [progress, setProgress] = useState(0);
-  const [dimensionStatus, setDimensionStatus] = useState({
-    d1: 'not-started',
-    d2: 'not-started',
-    d3: 'not-started',
-    d4: 'not-started'
-  });
+  const [dimensionQuestions, setDimensionQuestions] = useState([]);
+  const [answers, setAnswers] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   const dimensions = [
     {
-      id: 'd1',
+      id: 'behavioral',
       name: 'Behavioral Risk',
       description: 'Personal cybersecurity habits and behaviors',
-      questions: [
-        {
-          id: 'd1q1',
-          text: 'How often do you click on links or attachments in unsolicited emails?',
-          options: [
-            { value: 'never', label: 'Never', score: 0 },
-            { value: 'rarely', label: 'Rarely', score: 1 },
-            { value: 'sometimes', label: 'Sometimes', score: 2 },
-            { value: 'often', label: 'Often', score: 3 },
-            { value: 'always', label: 'Always', score: 4 }
-          ]
-        },
-        {
-          id: 'd1q2',
-          text: 'Do you use the same password for multiple accounts?',
-          options: [
-            { value: 'never', label: 'Never', score: 0 },
-            { value: 'few', label: 'A few accounts', score: 2 },
-            { value: 'many', label: 'Many accounts', score: 3 },
-            { value: 'all', label: 'All accounts', score: 4 }
-          ]
-        }
-      ]
+      weight: 0.3
     },
     {
-      id: 'd2',
+      id: 'technical', 
       name: 'Technical Risk',
       description: 'Device security and technical safeguards',
-      questions: [
-        {
-          id: 'd2q1',
-          text: 'Is multi-factor authentication (MFA) enabled on all your corporate accounts?',
-          options: [
-            { value: 'all', label: 'All accounts', score: 0 },
-            { value: 'most', label: 'Most accounts', score: 1 },
-            { value: 'some', label: 'Some accounts', score: 2 },
-            { value: 'none', label: 'No accounts', score: 4 }
-          ]
-        }
-      ]
+      weight: 0.3
     },
     {
-      id: 'd3',
-      name: 'Organizational Risk',
+      id: 'organizational',
+      name: 'Organizational Risk', 
       description: 'Workplace security culture and policies',
-      questions: [
-        {
-          id: 'd3q1',
-          text: 'Has your department conducted cybersecurity training in the last 6 months?',
-          options: [
-            { value: 'yes_recent', label: 'Yes, within 3 months', score: 0 },
-            { value: 'yes_6months', label: 'Yes, within 6 months', score: 1 },
-            { value: 'yes_year', label: 'Yes, over a year ago', score: 2 },
-            { value: 'no', label: 'No training', score: 4 }
-          ]
-        }
-      ]
+      weight: 0.2
     },
     {
-      id: 'd4',
+      id: 'environmental',
       name: 'Environmental Risk',
-      description: 'Physical and digital work environment',
-      questions: [
-        {
-          id: 'd4q1',
-          text: 'Do you work primarily from a public, unsecured Wi-Fi network?',
-          options: [
-            { value: 'never', label: 'Never', score: 0 },
-            { value: 'rarely', label: 'Rarely', score: 1 },
-            { value: 'sometimes', label: 'Sometimes', score: 2 },
-            { value: 'often', label: 'Often', score: 3 },
-            { value: 'always', label: 'Always', score: 4 }
-          ]
-        }
-      ]
+      description: 'Physical and digital work environment', 
+      weight: 0.2
     }
   ];
 
-  const [answers, setAnswers] = useState({});
-
-  const handleBeginAssessment = () => {
-    setCurrentStep('dimension');
-  };
-
-  const handleDimensionSelect = (dimensionId) => {
-    setCurrentDimension(dimensionId);
-    setCurrentStep('questions');
-  };
-
-  const handleAnswerSelect = (questionId, answerValue, score) => {
-    const newAnswers = {
-      ...answers,
-      [questionId]: {
-        value: answerValue,
-        score: score,
-        dimension: currentDimension
-      }
-    };
-    setAnswers(newAnswers);
+  // Calculate progress based on completed dimensions
+  const calculateProgress = () => {
+    if (!currentAssessment) return 0;
     
-    // Update progress
-    const totalQuestions = dimensions.reduce((total, dim) => total + dim.questions.length, 0);
-    const answeredQuestions = Object.keys(newAnswers).length;
-    const newProgress = Math.round((answeredQuestions / totalQuestions) * 100);
-    setProgress(newProgress);
+    const completedDimensions = dimensions.filter(dim => 
+      currentAssessment.dimensions[dim.id]?.answers?.length > 0
+    ).length;
+    
+    return Math.round((completedDimensions / dimensions.length) * 100);
+  };
 
-    // Update dimension status if all questions in current dimension are answered
-    const currentDimQuestions = dimensions.find(d => d.id === currentDimension)?.questions || [];
-    const answeredInCurrentDim = currentDimQuestions.filter(q => newAnswers[q.id]).length;
-    if (answeredInCurrentDim === currentDimQuestions.length) {
-      setDimensionStatus(prev => ({
-        ...prev,
-        [currentDimension]: 'completed'
-      }));
+  const progress = calculateProgress();
+
+  const handleBeginAssessment = async () => {
+    try {
+      if (!currentAssessment) {
+        await startAssessment();
+      }
+      setCurrentStep('dimension');
+    } catch (err) {
+      console.error('Failed to start assessment:', err);
     }
   };
 
-  const handleCompleteDimension = () => {
-    setCurrentStep('dimension');
-    setCurrentDimension(null);
+  const handleDimensionSelect = async (dimensionId) => {
+    setCurrentDimension(dimensionId);
+    try {
+      const questions = await getDimensionQuestions(dimensionId);
+      setDimensionQuestions(questions);
+      
+      // Load existing answers if any
+      const existingAnswers = currentAssessment?.dimensions[dimensionId]?.answers || [];
+      const answerMap = {};
+      existingAnswers.forEach(answer => {
+        answerMap[answer.questionId] = answer.selectedOption;
+      });
+      setAnswers(answerMap);
+      
+      setCurrentStep('questions');
+    } catch (err) {
+      console.error('Failed to load questions:', err);
+    }
+  };
+
+  const handleAnswerSelect = (questionId, answerValue) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: answerValue
+    }));
+  };
+
+  const handleCompleteDimension = async () => {
+    if (!currentDimension || !currentAssessment) return;
+
+    setSubmitting(true);
+    try {
+      // Prepare answers in the format expected by backend
+      const formattedAnswers = dimensionQuestions.map(question => {
+        const selectedOption = answers[question.id];
+        const option = question.options.find(opt => opt.value === selectedOption);
+        
+        return {
+          questionId: question.id,
+          questionText: question.text,
+          selectedOption: selectedOption,
+          score: option ? option.score : 0
+        };
+      }).filter(answer => answer.selectedOption); // Only include answered questions
+
+      await submitDimensionAnswers(currentDimension, formattedAnswers);
+      
+      setCurrentStep('dimension');
+      setCurrentDimension(null);
+      setDimensionQuestions([]);
+      setAnswers({});
+    } catch (err) {
+      console.error('Failed to submit answers:', err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCompleteAssessment = () => {
-    // Calculate scores and navigate to dashboard
-    console.log('Assessment answers:', answers);
+    // Navigate to dashboard where real scores will be displayed
     navigate('/dashboard');
   };
 
-  const getCurrentDimension = () => {
-    return dimensions.find(d => d.id === currentDimension);
-  };
-
   const getDimensionStatus = (dimId) => {
-    return dimensionStatus[dimId] || 'not-started';
+    if (!currentAssessment) return 'not-started';
+    
+    const dimension = currentAssessment.dimensions[dimId];
+    if (dimension?.answers?.length > 0) {
+      return 'completed';
+    }
+    return 'not-started';
   };
 
   const getStatusDisplay = (status) => {
@@ -170,6 +159,33 @@ const AssessmentPage = () => {
       default: return 'status-not-started';
     }
   };
+
+  // Show loading state
+  if (loading && !currentAssessment && currentStep === 'overview') {
+    return (
+      <div className="assessment-page">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading assessment...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && currentStep === 'overview') {
+    return (
+      <div className="assessment-page">
+        <div className="error-container">
+          <h3>Error Loading Assessment</h3>
+          <p>{error}</p>
+          <button className="btn-primary" onClick={() => window.location.reload()}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Render overview screen
   if (currentStep === 'overview') {
@@ -190,8 +206,9 @@ const AssessmentPage = () => {
         <div className="dimensions-overview">
           {dimensions.map(dimension => (
             <div key={dimension.id} className="dimension-card">
-              <h3>D{dimension.id.slice(1)}: {dimension.name}</h3>
+              <h3>{dimension.name}</h3>
               <p>{dimension.description}</p>
+              <div className="dimension-weight">Weight: {dimension.weight * 100}%</div>
               <div className={`dimension-status ${getStatusClass(getDimensionStatus(dimension.id))}`}>
                 {getStatusDisplay(getDimensionStatus(dimension.id))}
               </div>
@@ -200,7 +217,7 @@ const AssessmentPage = () => {
                 onClick={() => handleDimensionSelect(dimension.id)}
                 disabled={getDimensionStatus(dimension.id) === 'completed'}
               >
-                {getDimensionStatus(dimension.id) === 'completed' ? 'Completed' : 'Start'}
+                {getDimensionStatus(dimension.id) === 'completed' ? 'Review' : 'Start'}
               </button>
             </div>
           ))}
@@ -208,7 +225,7 @@ const AssessmentPage = () => {
 
         <div className="assessment-actions">
           <button className="btn-primary" onClick={handleBeginAssessment}>
-            Begin Assessment
+            {currentAssessment ? 'Continue Assessment' : 'Begin Assessment'}
           </button>
         </div>
       </div>
@@ -234,14 +251,19 @@ const AssessmentPage = () => {
         <div className="dimensions-selection">
           {dimensions.map(dimension => (
             <div key={dimension.id} className="dimension-selection-card">
-              <h3>D{dimension.id.slice(1)}: {dimension.name}</h3>
+              <h3>{dimension.name}</h3>
               <p>{dimension.description}</p>
               <div className="dimension-info">
-                <span className="questions-count">{dimension.questions.length} questions</span>
+                <span className="questions-count">Multiple questions</span>
                 <span className={`status-badge ${getStatusClass(getDimensionStatus(dimension.id))}`}>
                   {getStatusDisplay(getDimensionStatus(dimension.id))}
                 </span>
               </div>
+              {currentAssessment?.dimensions[dimension.id]?.score && (
+                <div className="dimension-score">
+                  Score: {currentAssessment.dimensions[dimension.id].score}/100
+                </div>
+              )}
               <button 
                 className={`btn-dimension ${getDimensionStatus(dimension.id) === 'completed' ? 'btn-completed' : ''}`}
                 onClick={() => handleDimensionSelect(dimension.id)}
@@ -268,14 +290,13 @@ const AssessmentPage = () => {
 
   // Render questions screen
   if (currentStep === 'questions' && currentDimension) {
-    const dimension = getCurrentDimension();
-    const currentQuestions = dimension?.questions || [];
+    const currentDim = dimensions.find(d => d.id === currentDimension);
 
     return (
       <div className="assessment-page">
         <div className="assessment-header">
-          <h1>D{currentDimension.slice(1)}: {dimension?.name}</h1>
-          <p>{dimension?.description}</p>
+          <h1>{currentDim?.name}</h1>
+          <p>{currentDim?.description}</p>
         </div>
 
         <div className="assessment-progress">
@@ -286,7 +307,7 @@ const AssessmentPage = () => {
         </div>
 
         <div className="questions-container">
-          {currentQuestions.map((question, index) => (
+          {dimensionQuestions.map((question, index) => (
             <div key={question.id} className="question-card">
               <h3>Question {index + 1}</h3>
               <p className="question-text">{question.text}</p>
@@ -294,8 +315,9 @@ const AssessmentPage = () => {
                 {question.options.map(option => (
                   <button
                     key={option.value}
-                    className={`option-btn ${answers[question.id]?.value === option.value ? 'option-selected' : ''}`}
-                    onClick={() => handleAnswerSelect(question.id, option.value, option.score)}
+                    className={`option-btn ${answers[question.id] === option.value ? 'option-selected' : ''}`}
+                    onClick={() => handleAnswerSelect(question.id, option.value)}
+                    disabled={submitting}
                   >
                     {option.label}
                   </button>
@@ -306,11 +328,19 @@ const AssessmentPage = () => {
         </div>
 
         <div className="assessment-actions">
-          <button className="btn-secondary" onClick={() => setCurrentStep('dimension')}>
+          <button 
+            className="btn-secondary" 
+            onClick={() => setCurrentStep('dimension')}
+            disabled={submitting}
+          >
             Back to Dimensions
           </button>
-          <button className="btn-primary" onClick={handleCompleteDimension}>
-            Complete {dimension?.name}
+          <button 
+            className="btn-primary" 
+            onClick={handleCompleteDimension}
+            disabled={submitting || dimensionQuestions.some(q => !answers[q.id])}
+          >
+            {submitting ? 'Submitting...' : `Complete ${currentDim?.name}`}
           </button>
         </div>
       </div>
