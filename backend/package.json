@@ -29,6 +29,10 @@
     "test:connection": "node test-connection.js",
     "test:health": "node test-enhanced-health.js",
     "test:api": "node test-api-endpoints.js",
-    "health:dashboard": "node health-dashboard.js"
+    "health:dashboard": "node health-dashboard.js",
+    "server:start": "node server-manager.js",
+    "server:ensure": "node ensure-server.js",
+    "server:kill": "node kill-ports.js",
+    "dev:workflow": "node dev-workflow.js"
   }
 }
