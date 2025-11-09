@@ -25,7 +25,7 @@ class PlatformStartupManager {
                         const matches = line.match(/(\d+)\s*$/);
                         if (matches) {
                             const pid = matches[1];
-                            console.log(\🛑 Killing process \40300 using port 5000\);
+                            console.log(`🛑 Killing process ${pid} using port 5000`);
                             process.kill(parseInt(pid));
                         }
                     });
@@ -39,7 +39,7 @@ class PlatformStartupManager {
                         const matches = line.match(/(\d+)\s*$/);
                         if (matches) {
                             const pid = matches[1];
-                            console.log(\🛑 Killing process \40300 using port 3000\);
+                            console.log(`🛑 Killing process ${pid} using port 3000`);
                             process.kill(parseInt(pid));
                         }
                     });
@@ -110,7 +110,7 @@ class PlatformStartupManager {
                 });
 
                 healthCheck.on('error', (error) => {
-                    console.log(\🔄 Backend not ready yet... (\ retries left)\);
+                    console.log(`🔄 Backend not ready yet... (${retries} retries left)`);
                     if (retries > 0) {
                         setTimeout(() => checkHealth(retries - 1), 2000);
                     } else {
@@ -150,12 +150,12 @@ class PlatformStartupManager {
             const isHealthy = await this.verifyBackendHealth();
             
             if (isHealthy) {
-                console.log('\\\\n🎉 HVI-CONTINUITY PLATFORM STARTUP COMPLETE!');
+                console.log('\n🎉 HVI-CONTINUITY PLATFORM STARTUP COMPLETE!');
                 console.log('📊 Backend API: http://localhost:' + this.backendPort);
                 console.log('🔧 Health Check: http://localhost:' + this.backendPort + '/api/health-enhanced');
-                console.log('\\\\n⚠️ Frontend can now safely connect to the backend!');
+                console.log('\n⚠️ Frontend can now safely connect to the backend!');
             } else {
-                console.log('\\\\n💥 Platform startup failed. Backend is not healthy.');
+                console.log('\n💥 Platform startup failed. Backend is not healthy.');
                 process.exit(1);
             }
             

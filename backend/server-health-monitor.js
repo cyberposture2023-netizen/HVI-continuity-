@@ -27,10 +27,10 @@ class ServerHealthMonitor {
         while (port < startPort + 10) {
             const isAvailable = await this.checkPortAvailability(port);
             if (isAvailable) {
-                console.log(\Port \ is available\);
+                console.log(`Port ${port} is available`);
                 return port;
             }
-            console.log(\Port \ is busy, trying \\);
+            console.log(`Port ${port} is busy, trying ${port + 1}`);
             port++;
         }
         throw new Error('No available ports found');
@@ -46,9 +46,9 @@ class ServerHealthMonitor {
             
             // Start server
             this.server = app.listen(this.port, () => {
-                console.log(\✅ Backend server successfully started on port \\);
-                console.log(\📊 Health check available at: http://localhost:\/api/health\);
-                console.log(\🔗 API endpoints available at: http://localhost:\/api\);
+                console.log(`✅ Backend server successfully started on port ${this.port}`);
+                console.log(`📊 Health check available at: http://localhost:${this.port}/api/health`);
+                console.log(`🔗 API endpoints available at: http://localhost:${this.port}/api`);
                 this.retryCount = 0; // Reset retry count on success
             });
 
@@ -85,7 +85,7 @@ class ServerHealthMonitor {
     handleServerError() {
         this.retryCount++;
         if (this.retryCount <= this.maxRetries) {
-            console.log(\🔄 Retrying server startup... Attempt \ of \\);
+            console.log(`🔄 Retrying server startup... Attempt ${this.retryCount} of ${this.maxRetries}`);
             setTimeout(() => this.startServer(), 2000);
             return false;
         } else {

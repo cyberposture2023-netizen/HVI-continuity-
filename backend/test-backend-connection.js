@@ -12,7 +12,7 @@ function testBackendConnection() {
     };
 
     const req = http.request(options, (res) => {
-        console.log(\✅ Backend responded with status: \\);
+        console.log(`✅ Backend responded with status: ${res.statusCode}`);
         
         let data = '';
         res.on('data', (chunk) => data += chunk);
@@ -20,11 +20,11 @@ function testBackendConnection() {
             try {
                 const health = JSON.parse(data);
                 console.log('📊 Backend Health Report:');
-                console.log(\   Status: \\);
-                console.log(\   Port: \\);
-                console.log(\   Database: \\);
-                console.log(\   Uptime: \ seconds\);
-                console.log('\\\\n🎉 Backend is fully operational!');
+                console.log(`   Status: ${health.status}`);
+                console.log(`   Port: ${health.port}`);
+                console.log(`   Database: ${health.database}`);
+                console.log(`   Uptime: ${health.uptime} seconds`);
+                console.log('\n🎉 Backend is fully operational!');
             } catch (e) {
                 console.log('❌ Could not parse health response');
             }
@@ -32,7 +32,7 @@ function testBackendConnection() {
     });
 
     req.on('error', (error) => {
-        console.log(\❌ Backend connection failed: \\);
+        console.log(`❌ Backend connection failed: ${error.message}`);
         console.log('💡 Make sure the backend server is running on port 5000');
     });
 
