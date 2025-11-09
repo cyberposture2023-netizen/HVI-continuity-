@@ -1,3 +1,23 @@
+
+// Enhanced health check endpoint
+app.get('/api/health-enhanced', (req, res) => {
+    const healthStatus = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        port: process.env.PORT || 5000,
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        endpoints: {
+            assessments: '/api/assessments',
+            dashboard: '/api/dashboard', 
+            users: '/api/users',
+            questions: '/api/questions',
+            auth: '/api/auth'
+        },
+        memory: process.memoryUsage(),
+        uptime: process.uptime()
+    };
+    res.json(healthStatus);
+});
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -76,3 +96,4 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
