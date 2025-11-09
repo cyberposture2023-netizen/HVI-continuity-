@@ -89,11 +89,11 @@ const PORT = process.env.PORT || 5000;
 
 // Check if port is available, if not increment
 const server = app.listen(PORT, () => {
-    console.log(\🚀 HVI-Continuity Platform API running on port \\);
-    console.log(\📊 Environment: \\);
-    console.log(\🌐 Frontend URL: \\);
-    console.log(\🗄️  Database: \\);
-    console.log(\⏰ Started at: \\);
+    console.log(\HVI-Continuity Platform API running on port \\);
+    console.log(\Environment: \\);
+    console.log(\Frontend URL: \\);
+    console.log(\Database: \\);
+    console.log(\Started at: \\);
 });
 
 // Graceful shutdown
