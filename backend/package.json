@@ -35,6 +35,7 @@
     "server:kill": "node kill-ports.js",
     "dev:workflow": "node dev-workflow.js",
     "status": "node quick-status.js",
-    "readiness": "node readiness-verify.js"
+    "readiness": "node readiness-verify.js",
+    "server:repair": "node server-repair.js"
   }
 }
