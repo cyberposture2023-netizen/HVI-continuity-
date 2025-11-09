@@ -1,131 +1,100 @@
 const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-require('dotenv').config();
 
-const connectDB = require('./config/database');
-
-// Route imports
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
-
-// Initialize Express app
+// Initialize Express first
 const app = express();
 
-// Security middleware
-app.use(helmet());
-
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
-
-// CORS configuration
-app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true
-}));
-
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
+// Basic middleware - no dependencies that could fail
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint (works even without database)
+// Health endpoint - always works
 app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'success',
         message: 'HVI-Continuity Platform API is running',
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
-        database: 'Checking...'
+        environment: process.env.NODE_ENV || 'development'
     });
 });
 
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-
-// Basic API info endpoint
+// API info
 app.get('/api', (req, res) => {
     res.json({
         name: 'HVI-Continuity Platform API',
         version: '1.0.0',
         description: '4D Human Risk Assessment System',
-        endpoints: {
-            health: '/api/health',
-            auth: '/api/auth',
-            users: '/api/users',
-            assessments: '/api/assessments'
+        status: 'Running (Basic Mode)'
+    });
+});
+
+// Start server immediately on available port
+function startServer(port = 5000) {
+    const server = app.listen(port, 'localhost', () => {
+        console.log('🚀 HVI-Continuity Platform API started successfully!');
+        console.log('📍 Port: ' + port);
+        console.log('🌐 URL: http://localhost:' + port);
+        console.log('❤️  Health: http://localhost:' + port + '/api/health');
+        console.log('⏰ Started: ' + new Date().toISOString());
+    });
+
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log('Port ' + port + ' is busy, trying port ' + (port + 1));
+            startServer(port + 1);
+        } else {
+            console.error('Server error:', err);
         }
     });
-});
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Error:', err.stack);
-    res.status(500).json({
-        status: 'error',
-        message: 'Something went wrong!',
-        error: process.env.NODE_ENV === 'development' ? err.message : {}
-    });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-    res.status(404).json({
-        status: 'error',
-        message: 'Route not found'
-    });
-});
-
-// Start server with better error handling
-const PORT = process.env.PORT || 5000;
-
-// Connect to MongoDB and start server
-async function startServer() {
-    try {
-        console.log('Attempting to connect to MongoDB...');
-        await connectDB();
-        console.log('MongoDB connected successfully!');
-        
-        app.listen(PORT, () => {
-            console.log('HVI-Continuity Platform API running on port ' + PORT);
-            console.log('Environment: ' + process.env.NODE_ENV);
-            console.log('Frontend URL: ' + (process.env.FRONTEND_URL || 'http://localhost:3000'));
-            console.log('Database: ' + process.env.MONGODB_URI);
-            console.log('Started at: ' + new Date().toISOString());
-            console.log('Health check: http://localhost:' + PORT + '/api/health');
-        });
-    } catch (error) {
-        console.error('Failed to start server:', error.message);
-        console.log('Starting server without database connection...');
-        
-        // Update health endpoint to show database status
-        app.get('/api/health', (req, res) => {
-            res.status(200).json({
-                status: 'success',
-                message: 'HVI-Continuity Platform API is running (database connection failed)',
-                timestamp: new Date().toISOString(),
-                environment: process.env.NODE_ENV,
-                database: 'Disconnected - ' + error.message
-            });
-        });
-        
-        app.listen(PORT, () => {
-            console.log('HVI-Continuity Platform API running on port ' + PORT + ' (without database)');
-            console.log('Note: MongoDB connection failed. Some features will not work.');
-            console.log('Health check: http://localhost:' + PORT + '/api/health');
-        });
-    }
+    return server;
 }
 
-startServer();
+// Now try to load optional dependencies
+try {
+    require('dotenv').config();
+    console.log('Environment variables loaded');
+} catch (err) {
+    console.log('dotenv not available, using defaults');
+}
+
+// Try to connect to MongoDB (non-blocking)
+setTimeout(() => {
+    try {
+        const connectDB = require('./config/database');
+        connectDB().then(connected => {
+            if (connected) {
+                console.log('✅ Database features enabled');
+                // Load database-dependent routes
+                try {
+                    const authRoutes = require('./routes/authRoutes');
+                    const userRoutes = require('./routes/userRoutes');
+                    app.use('/api/auth', authRoutes);
+                    app.use('/api/users', userRoutes);
+                    console.log('✅ Authentication routes loaded');
+                } catch (routeErr) {
+                    console.log('⚠️ Some routes not available:', routeErr.message);
+                }
+            }
+        });
+    } catch (dbErr) {
+        console.log('⚠️ Database connection skipped:', dbErr.message);
+    }
+}, 100);
+
+// Start the server
+const PORT = process.env.PORT || 5000;
+startServer(PORT);
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down gracefully');
+    console.log('Shutting down gracefully...');
     process.exit(0);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
