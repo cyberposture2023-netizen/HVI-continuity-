@@ -22,6 +22,9 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "jest",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "start:clean": "node start-server.js",
+    "kill:ports": "node kill-ports.js",
+    "health:check": "node -e \"require(`\\\"`\\\"`\\\"http`\\\"`\\\"`\\\").get(`\\\"`\\\"`\\\"http://localhost:5000/api/health-enhanced`\\\"`\\\"`\\\", (res) => { console.log(`\\\"`\\\"`\\\"Status:`\\\"`\\\"`\\\", res.statusCode); }).on(`\\\"`\\\"`\\\"error`\\\"`\\\"`\\\", (e) => console.log(`\\\"`\\\"`\\\"Error:`\\\"`\\\"`\\\", e.message))\""
   }
 }
