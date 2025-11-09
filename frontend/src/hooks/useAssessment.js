@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { assessmentAPI, questionsAPI } from '../services/api';
+import apiService from '../services/api';
 
 export const useAssessment = () => {
   const [currentAssessment, setCurrentAssessment] = useState(null);
@@ -7,13 +7,13 @@ export const useAssessment = () => {
   const [error, setError] = useState(null);
 
   // Start a new assessment
-  const startAssessment = async (assessmentData = {}) => {
-    setLoading(true);
-    setError(null);
+  const startAssessment = async () => {
     try {
-      const response = await assessmentAPI.startAssessment(assessmentData);
-      setCurrentAssessment(response.data.assessment);
-      return response.data.assessment;
+      setLoading(true);
+      setError(null);
+      const response = await apiService.startAssessment();
+      setCurrentAssessment(response.data);
+      return response.data;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to start assessment');
       throw err;
@@ -23,42 +23,12 @@ export const useAssessment = () => {
   };
 
   // Submit answers for a dimension
-  const submitDimensionAnswers = async (dimension, answers) => {
-    if (!currentAssessment) {
-      throw new Error('No active assessment found');
-    }
-
-    setLoading(true);
-    setError(null);
+  const submitDimensionAnswers = async (assessmentId, dimension, answers) => {
     try {
-      const response = await assessmentAPI.submitDimensionAnswers(
-        currentAssessment._id, 
-        dimension, 
-        answers
-      );
-      
-      // Update current assessment with new scores
-      if (response.data.isComplete) {
-        // Assessment is complete, refresh the entire assessment
-        const updatedAssessment = await assessmentAPI.getAssessment(currentAssessment._id);
-        setCurrentAssessment(updatedAssessment.data.assessment);
-      } else {
-        // Update just the dimension that was completed
-        setCurrentAssessment(prev => ({
-          ...prev,
-          dimensions: {
-            ...prev.dimensions,
-            [dimension]: {
-              ...prev.dimensions[dimension],
-              score: response.data.dimensionScore,
-              answers: answers,
-              completedAt: new Date()
-            }
-          },
-          overallScore: response.data.overallScore
-        }));
-      }
-      
+      setLoading(true);
+      setError(null);
+      const response = await apiService.submitDimensionAnswers(assessmentId, dimension, answers);
+      setCurrentAssessment(response.data);
       return response.data;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit answers');
@@ -68,35 +38,49 @@ export const useAssessment = () => {
     }
   };
 
-  // Load current assessment
-  const loadCurrentAssessment = async () => {
-    setLoading(true);
-    setError(null);
+  // Get current assessment
+  const getCurrentAssessment = async () => {
     try {
-      const response = await assessmentAPI.getCurrentAssessment();
-      setCurrentAssessment(response.data.assessment);
-      return response.data.assessment;
+      setLoading(true);
+      setError(null);
+      const response = await apiService.getCurrentAssessment();
+      setCurrentAssessment(response.data);
+      return response.data;
     } catch (err) {
-      if (err.response?.status === 404) {
-        // No current assessment found, which is fine
-        setCurrentAssessment(null);
-      } else {
-        setError(err.response?.data?.message || 'Failed to load assessment');
+      // It's okay if no current assessment exists
+      if (err.response?.status !== 404) {
+        setError(err.response?.data?.message || 'Failed to fetch assessment');
       }
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
   // Get questions for a dimension
-  const getDimensionQuestions = async (dimension) => {
-    setLoading(true);
-    setError(null);
+  const getQuestionsByDimension = async (dimension) => {
     try {
-      const response = await questionsAPI.getDimensionQuestions(dimension);
-      return response.data.questions;
+      setLoading(true);
+      setError(null);
+      const response = await apiService.getQuestionsByDimension(dimension);
+      return response.data;
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load questions');
+      setError(err.response?.data?.message || 'Failed to fetch questions');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get assessment results
+  const getAssessmentResults = async (assessmentId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.getAssessmentResults(assessmentId);
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch assessment results');
       throw err;
     } finally {
       setLoading(false);
@@ -104,14 +88,14 @@ export const useAssessment = () => {
   };
 
   // Clear current assessment
-  const clearAssessment = () => {
+  const clearCurrentAssessment = () => {
     setCurrentAssessment(null);
     setError(null);
   };
 
-  // Load assessment on hook initialization
   useEffect(() => {
-    loadCurrentAssessment();
+    // Load current assessment when hook is initialized
+    getCurrentAssessment();
   }, []);
 
   return {
@@ -120,8 +104,11 @@ export const useAssessment = () => {
     error,
     startAssessment,
     submitDimensionAnswers,
-    loadCurrentAssessment,
-    getDimensionQuestions,
-    clearAssessment
+    getCurrentAssessment,
+    getQuestionsByDimension,
+    getAssessmentResults,
+    clearCurrentAssessment
   };
 };
+
+export default useAssessment;
