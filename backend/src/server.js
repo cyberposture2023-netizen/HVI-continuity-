@@ -7,7 +7,8 @@ const connectDB = require('./config/database');
 // Route imports
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
-const hviRoutes = require('./routes/hviRoutes'); // Add HVI routes
+const hviRoutes = require('./routes/hviRoutes');
+const simulationRoutes = require('./routes/simulationRoutes'); // Add HVI routes
 
 const app = express();
 
@@ -21,7 +22,8 @@ connectDB();
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/hvi', hviRoutes); // Add HVI routes
+app.use('/api/hvi', hviRoutes);
+app.use('/api/simulations', simulationRoutes);\napp.use('/api/simulations', simulationRoutes); // Add HVI routes
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -62,7 +64,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ 
     success: false, 
     error: 'Endpoint not found',
-    availableEndpoints: ['/api/auth', '/api/users', '/api/hvi', '/api/health']
+    availableEndpoints: ['/api/auth', '/api/users', '/api/hvi', '/api/simulations', '/api/health']
   });
 });
 
@@ -101,3 +103,5 @@ const startServer = async () => {
 };
 
 startServer();
+
+
