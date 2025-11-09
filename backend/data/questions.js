@@ -1,114 +1,110 @@
-// Sample questions for each dimension
-const assessmentQuestions = {
-  behavioral: [
+const questions = {
+  D1: [
     {
-      id: 'b1',
+      id: 'D1_Q1',
       text: 'How often do you click on links or attachments in unsolicited emails?',
+      dimension: 'D1',
       options: [
-        { value: 'never', label: 'Never', score: 0 },
-        { value: 'rarely', label: 'Rarely', score: 1 },
-        { value: 'sometimes', label: 'Sometimes', score: 2 },
-        { value: 'often', label: 'Often', score: 3 },
-        { value: 'always', label: 'Always', score: 4 }
-      ],
-      category: 'phishing_awareness'
+        { id: 'never', text: 'Never', score: 5 },
+        { id: 'rarely', text: 'Rarely', score: 4 },
+        { id: 'sometimes', text: 'Sometimes', score: 3 },
+        { id: 'often', text: 'Often', score: 2 },
+        { id: 'always', text: 'Always', score: 1 }
+      ]
     },
     {
-      id: 'b2',
-      text: 'Do you use the same password for multiple accounts?',
+      id: 'D1_Q2',
+      text: 'Do you use unique passwords for different online accounts?',
+      dimension: 'D1',
       options: [
-        { value: 'never', label: 'Never', score: 0 },
-        { value: 'few', label: 'A few accounts', score: 2 },
-        { value: 'many', label: 'Many accounts', score: 3 },
-        { value: 'all', label: 'All accounts', score: 4 }
-      ],
-      category: 'password_hygiene'
+        { id: 'always', text: 'Always', score: 5 },
+        { id: 'mostly', text: 'Mostly', score: 4 },
+        { id: 'sometimes', text: 'Sometimes', score: 3 },
+        { id: 'rarely', text: 'Rarely', score: 2 },
+        { id: 'never', text: 'Never', score: 1 }
+      ]
     },
     {
-      id: 'b3',
-      text: 'How often do you update your passwords?',
+      id: 'D1_Q3',
+      text: 'How likely are you to report a suspicious email to your IT department?',
+      dimension: 'D1',
       options: [
-        { value: 'regularly', label: 'Every 3 months', score: 0 },
-        { value: 'occasionally', label: 'Every 6 months', score: 1 },
-        { value: 'rarely', label: 'Once a year', score: 3 },
-        { value: 'never', label: 'Never', score: 4 }
-      ],
-      category: 'password_hygiene'
+        { id: 'very_likely', text: 'Very Likely', score: 5 },
+        { id: 'likely', text: 'Likely', score: 4 },
+        { id: 'neutral', text: 'Neutral', score: 3 },
+        { id: 'unlikely', text: 'Unlikely', score: 2 },
+        { id: 'very_unlikely', text: 'Very Unlikely', score: 1 }
+      ]
     }
   ],
-  technical: [
+  D2: [
     {
-      id: 't1',
-      text: 'Is multi-factor authentication (MFA) enabled on all your corporate accounts?',
+      id: 'D2_Q1',
+      text: 'Do you regularly update your software and applications?',
+      dimension: 'D2',
       options: [
-        { value: 'all', label: 'All accounts', score: 0 },
-        { value: 'most', label: 'Most accounts', score: 1 },
-        { value: 'some', label: 'Some accounts', score: 2 },
-        { value: 'none', label: 'No accounts', score: 4 }
-      ],
-      category: 'authentication'
+        { id: 'always', text: 'Always', score: 5 },
+        { id: 'mostly', text: 'Mostly', score: 4 },
+        { id: 'sometimes', text: 'Sometimes', score: 3 },
+        { id: 'rarely', text: 'Rarely', score: 2 },
+        { id: 'never', text: 'Never', score: 1 }
+      ]
     },
     {
-      id: 't2',
-      text: 'How often do you update your software and applications?',
+      id: 'D2_Q2',
+      text: 'How familiar are you with multi-factor authentication?',
+      dimension: 'D2',
       options: [
-        { value: 'immediately', label: 'As soon as updates are available', score: 0 },
-        { value: 'weekly', label: 'Within a week', score: 1 },
-        { value: 'monthly', label: 'Within a month', score: 2 },
-        { value: 'rarely', label: 'Rarely or never', score: 4 }
-      ],
-      category: 'system_maintenance'
+        { id: 'expert', text: 'Expert', score: 5 },
+        { id: 'comfortable', text: 'Comfortable', score: 4 },
+        { id: 'basic', text: 'Basic Knowledge', score: 3 },
+        { id: 'heard', text: 'Heard of It', score: 2 },
+        { id: 'unfamiliar', text: 'Unfamiliar', score: 1 }
+      ]
     }
   ],
-  organizational: [
+  D3: [
     {
-      id: 'o1',
-      text: 'Has your department conducted cybersecurity training in the last 6 months?',
+      id: 'D3_Q1',
+      text: 'Does your organization provide regular cybersecurity training?',
+      dimension: 'D3',
       options: [
-        { value: 'yes_recent', label: 'Yes, within 3 months', score: 0 },
-        { value: 'yes_6months', label: 'Yes, within 6 months', score: 1 },
-        { value: 'yes_year', label: 'Yes, over a year ago', score: 2 },
-        { value: 'no', label: 'No training', score: 4 }
-      ],
-      category: 'training'
-    },
-    {
-      id: 'o2',
-      text: 'Are you familiar with your company\'s incident reporting procedures?',
-      options: [
-        { value: 'very', label: 'Very familiar', score: 0 },
-        { value: 'somewhat', label: 'Somewhat familiar', score: 1 },
-        { value: 'vaguely', label: 'Vaguely familiar', score: 3 },
-        { value: 'not', label: 'Not familiar', score: 4 }
-      ],
-      category: 'policies'
+        { id: 'monthly', text: 'Monthly', score: 5 },
+        { id: 'quarterly', text: 'Quarterly', score: 4 },
+        { id: 'yearly', text: 'Yearly', score: 3 },
+        { id: 'rarely', text: 'Rarely', score: 2 },
+        { id: 'never', text: 'Never', score: 1 }
+      ]
     }
   ],
-  environmental: [
+  D4: [
     {
-      id: 'e1',
-      text: 'Do you work primarily from a public, unsecured Wi-Fi network?',
+      id: 'D4_Q1',
+      text: 'How secure is your physical work environment?',
+      dimension: 'D4',
       options: [
-        { value: 'never', label: 'Never', score: 0 },
-        { value: 'rarely', label: 'Rarely', score: 1 },
-        { value: 'sometimes', label: 'Sometimes', score: 2 },
-        { value: 'often', label: 'Often', score: 3 },
-        { value: 'always', label: 'Always', score: 4 }
-      ],
-      category: 'network_security'
-    },
-    {
-      id: 'e2',
-      text: 'How do you store sensitive physical documents?',
-      options: [
-        { value: 'locked', label: 'In locked cabinets', score: 0 },
-        { value: 'secured', label: 'In secured areas', score: 1 },
-        { value: 'desk', label: 'On desk or in open areas', score: 3 },
-        { value: 'unsecured', label: 'No specific storage', score: 4 }
-      ],
-      category: 'physical_security'
+        { id: 'very_secure', text: 'Very Secure', score: 5 },
+        { id: 'secure', text: 'Secure', score: 4 },
+        { id: 'moderate', text: 'Moderate', score: 3 },
+        { id: 'insecure', text: 'Insecure', score: 2 },
+        { id: 'very_insecure', text: 'Very Insecure', score: 1 }
+      ]
     }
   ]
 };
 
-module.exports = assessmentQuestions;
+// Helper function to get questions by dimension
+function getQuestionsByDimension(dimension) {
+  return questions[dimension] || [];
+}
+
+// Helper function to get all questions
+function getAllQuestions() {
+  return Object.values(questions).flat();
+}
+
+module.exports = {
+  getQuestionsByDimension,
+  getAllQuestions,
+  questions
+};

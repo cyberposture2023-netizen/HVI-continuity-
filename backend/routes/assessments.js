@@ -2,243 +2,248 @@ const express = require('express');
 const router = express.Router();
 const Assessment = require('../models/Assessment');
 const User = require('../models/User');
-const { authenticateToken } = require('../middleware/auth');
+const Question = require('../data/questions');
+const auth = require('../middleware/auth');
 
 // Start a new assessment
-router.post('/start', authenticateToken, async (req, res) => {
+router.post('/start', auth, async (req, res) => {
   try {
-    const { assessmentType = 'full', department } = req.body;
-    
-    const newAssessment = new Assessment({
-      userId: req.user.id,
-      assessmentType,
-      department: department || req.user.department,
-      status: 'in-progress',
-      startDate: new Date(),
-      dimensions: {
-        behavioral: { score: 0, answers: [] },
-        technical: { score: 0, answers: [] },
-        organizational: { score: 0, answers: [] },
-        environmental: { score: 0, answers: [] }
-      }
+    // Check if user has an active assessment
+    const existingAssessment = await Assessment.findOne({ 
+      user: req.user.id, 
+      status: 'in-progress' 
     });
 
-    await newAssessment.save();
-    res.status(201).json({
-      success: true,
-      message: 'Assessment started successfully',
-      assessment: newAssessment
+    if (existingAssessment) {
+      return res.json(existingAssessment);
+    }
+
+    // Create new assessment
+    const assessment = new Assessment({
+      user: req.user.id,
+      status: 'in-progress',
+      dimensions: {
+        D1: { completed: false, score: 0, answers: [] },
+        D2: { completed: false, score: 0, answers: [] },
+        D3: { completed: false, score: 0, answers: [] },
+        D4: { completed: false, score: 0, answers: [] }
+      },
+      overallScore: 0
     });
+
+    await assessment.save();
+    res.status(201).json(assessment);
   } catch (error) {
     console.error('Error starting assessment:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error starting assessment',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Server error starting assessment' });
   }
 });
 
 // Submit answers for a dimension
-router.post('/:assessmentId/dimension/:dimension', authenticateToken, async (req, res) => {
+router.post('/:id/dimension/:dimension', auth, async (req, res) => {
   try {
-    const { assessmentId, dimension } = req.params;
+    const { id, dimension } = req.params;
     const { answers } = req.body;
 
     // Validate dimension
-    const validDimensions = ['behavioral', 'technical', 'organizational', 'environmental'];
-    if (!validDimensions.includes(dimension)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid dimension'
-      });
+    if (!['D1', 'D2', 'D3', 'D4'].includes(dimension)) {
+      return res.status(400).json({ message: 'Invalid dimension' });
     }
 
-    const assessment = await Assessment.findOne({
-      _id: assessmentId,
-      userId: req.user.id
-    });
-
+    const assessment = await Assessment.findById(id);
     if (!assessment) {
-      return res.status(404).json({
-        success: false,
-        message: 'Assessment not found'
-      });
+      return res.status(404).json({ message: 'Assessment not found' });
     }
 
     // Calculate dimension score
-    const dimensionScore = calculateDimensionScore(answers);
-    
-    // Update assessment with new answers and score
+    const dimensionQuestions = Question.getQuestionsByDimension(dimension);
+    let totalScore = 0;
+    let maxPossibleScore = 0;
+
+    answers.forEach(answer => {
+      const question = dimensionQuestions.find(q => q.id === answer.questionId);
+      if (question) {
+        const selectedOption = question.options.find(opt => opt.id === answer.answer);
+        if (selectedOption) {
+          totalScore += selectedOption.score;
+          maxPossibleScore += 5; // Maximum score per question
+        }
+      }
+    });
+
+    // Calculate percentage score (0-100)
+    const dimensionScore = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+
+    // Update assessment
     assessment.dimensions[dimension] = {
+      completed: true,
       score: dimensionScore,
       answers: answers,
       completedAt: new Date()
     };
 
-    // Check if all dimensions are completed
-    const allDimensionsCompleted = validDimensions.every(dim => 
-      assessment.dimensions[dim].answers.length > 0
-    );
-
-    if (allDimensionsCompleted) {
-      assessment.status = 'completed';
-      assessment.completionDate = new Date();
-      assessment.overallScore = calculateOverallScore(assessment.dimensions);
+    // Check if all dimensions are completed and calculate overall score
+    const completedDimensions = Object.values(assessment.dimensions).filter(dim => dim.completed);
+    
+    if (completedDimensions.length === 4) {
+      // Calculate overall HVI score (weighted average)
+      const weights = { D1: 0.3, D2: 0.3, D3: 0.2, D4: 0.2 }; // Weight distribution
+      let overallScore = 0;
       
-      // Update user's latest scores
-      await User.findByIdAndUpdate(req.user.id, {
-        $set: {
-          'scores.overall': assessment.overallScore,
-          'scores.behavioral': assessment.dimensions.behavioral.score,
-          'scores.technical': assessment.dimensions.technical.score,
-          'scores.organizational': assessment.dimensions.organizational.score,
-          'scores.environmental': assessment.dimensions.environmental.score,
-          lastAssessmentDate: new Date()
-        }
+      Object.keys(assessment.dimensions).forEach(dim => {
+        overallScore += assessment.dimensions[dim].score * weights[dim];
       });
+
+      assessment.overallScore = Math.round(overallScore);
+      assessment.status = 'completed';
+      assessment.completedAt = new Date();
+
+      // Update user scores
+      await updateUserScores(req.user.id, assessment);
     }
 
     await assessment.save();
-
-    res.json({
-      success: true,
-      message: 'Dimension answers submitted successfully',
-      dimensionScore,
-      overallScore: assessment.overallScore,
-      isComplete: allDimensionsCompleted
-    });
+    res.json(assessment);
   } catch (error) {
     console.error('Error submitting dimension answers:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error submitting answers',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Server error submitting answers' });
   }
 });
 
-// Get user's current assessment
-router.get('/current', authenticateToken, async (req, res) => {
+// Get current assessment for user
+router.get('/current', auth, async (req, res) => {
   try {
-    const assessment = await Assessment.findOne({
-      userId: req.user.id,
-      status: 'in-progress'
-    }).sort({ startDate: -1 });
+    const assessment = await Assessment.findOne({ 
+      user: req.user.id, 
+      status: { $in: ['in-progress', 'completed'] } 
+    }).sort({ createdAt: -1 });
 
     if (!assessment) {
-      return res.status(404).json({
-        success: false,
-        message: 'No current assessment found'
-      });
+      return res.status(404).json({ message: 'No assessment found' });
     }
 
-    res.json({
-      success: true,
-      assessment
-    });
+    res.json(assessment);
   } catch (error) {
     console.error('Error fetching current assessment:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching current assessment',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Server error fetching assessment' });
   }
 });
 
-// Get user's assessment history
-router.get('/history', authenticateToken, async (req, res) => {
+// Get assessment history
+router.get('/history', auth, async (req, res) => {
   try {
-    const { limit = 10, page = 1 } = req.query;
-    const skip = (page - 1) * limit;
+    const assessments = await Assessment.find({ 
+      user: req.user.id,
+      status: 'completed'
+    }).sort({ completedAt: -1 }).limit(10);
 
-    const assessments = await Assessment.find({ userId: req.user.id })
-      .sort({ startDate: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    const total = await Assessment.countDocuments({ userId: req.user.id });
-
-    res.json({
-      success: true,
-      assessments,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
+    res.json(assessments);
   } catch (error) {
     console.error('Error fetching assessment history:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching assessment history',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Server error fetching history' });
   }
 });
 
-// Get assessment by ID
-router.get('/:assessmentId', authenticateToken, async (req, res) => {
+// Get specific assessment results
+router.get('/:id/results', auth, async (req, res) => {
   try {
-    const assessment = await Assessment.findOne({
-      _id: req.params.assessmentId,
-      userId: req.user.id
-    });
-
-    if (!assessment) {
-      return res.status(404).json({
-        success: false,
-        message: 'Assessment not found'
-      });
+    const assessment = await Assessment.findById(req.params.id);
+    
+    if (!assessment || assessment.user.toString() !== req.user.id) {
+      return res.status(404).json({ message: 'Assessment not found' });
     }
 
-    res.json({
-      success: true,
-      assessment
-    });
+    res.json(assessment);
   } catch (error) {
-    console.error('Error fetching assessment:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching assessment',
-      error: error.message
-    });
+    console.error('Error fetching assessment results:', error);
+    res.status(500).json({ message: 'Server error fetching results' });
   }
 });
 
-// Helper function to calculate dimension score
-function calculateDimensionScore(answers) {
-  if (!answers || answers.length === 0) return 0;
-  
-  const totalScore = answers.reduce((sum, answer) => sum + (answer.score || 0), 0);
-  const maxPossibleScore = answers.length * 4; // Assuming 0-4 scale
-  
-  // Convert to percentage and invert so higher score = lower risk
-  const riskPercentage = (totalScore / maxPossibleScore) * 100;
-  
-  // Convert to 0-100 scale where 100 is best (no risk)
-  return Math.round(100 - riskPercentage);
-}
+// Get department scores (mock data for dashboard)
+router.get('/department-scores', auth, async (req, res) => {
+  try {
+    // Mock department data - in production, this would aggregate real user data
+    const departmentScores = [
+      {
+        department: 'IT',
+        score: 72,
+        riskLevel: 'medium',
+        employeeCount: 24,
+        completedAssessments: 18
+      },
+      {
+        department: 'HR',
+        score: 65,
+        riskLevel: 'medium',
+        employeeCount: 12,
+        completedAssessments: 8
+      },
+      {
+        department: 'Finance',
+        score: 58,
+        riskLevel: 'high',
+        employeeCount: 18,
+        completedAssessments: 12
+      },
+      {
+        department: 'Operations',
+        score: 81,
+        riskLevel: 'low',
+        employeeCount: 32,
+        completedAssessments: 25
+      }
+    ];
 
-// Helper function to calculate overall HVI score
-function calculateOverallScore(dimensions) {
-  const weights = {
-    behavioral: 0.3,
-    technical: 0.3,
-    organizational: 0.2,
-    environmental: 0.2
-  };
+    res.json(departmentScores);
+  } catch (error) {
+    console.error('Error fetching department scores:', error);
+    res.status(500).json({ message: 'Server error fetching department data' });
+  }
+});
 
-  const weightedSum = 
-    (dimensions.behavioral.score * weights.behavioral) +
-    (dimensions.technical.score * weights.technical) +
-    (dimensions.organizational.score * weights.organizational) +
-    (dimensions.environmental.score * weights.environmental);
+// Get organization overview
+router.get('/organization-overview', auth, async (req, res) => {
+  try {
+    // Mock organization data
+    const overview = {
+      totalEmployees: 86,
+      averageHVI: 67,
+      completedAssessments: 42,
+      highRiskDepartments: 1,
+      mediumRiskDepartments: 2,
+      lowRiskDepartments: 1,
+      lastOrganizationScan: new Date(),
+      assessmentCompletionRate: 65
+    };
 
-  return Math.round(weightedSum);
+    res.json(overview);
+  } catch (error) {
+    console.error('Error fetching organization overview:', error);
+    res.status(500).json({ message: 'Server error fetching organization data' });
+  }
+});
+
+// Helper function to update user scores
+async function updateUserScores(userId, assessment) {
+  try {
+    const user = await User.findById(userId);
+    
+    if (user) {
+      user.overallHVI = assessment.overallScore;
+      user.d1Score = assessment.dimensions.D1.score;
+      user.d2Score = assessment.dimensions.D2.score;
+      user.d3Score = assessment.dimensions.D3.score;
+      user.d4Score = assessment.dimensions.D4.score;
+      user.lastAssessmentDate = new Date();
+      user.assessmentCount = (user.assessmentCount || 0) + 1;
+
+      await user.save();
+      console.log('User scores updated successfully for user:', userId);
+    }
+  } catch (error) {
+    console.error('Error updating user scores:', error);
+  }
 }
 
 module.exports = router;
