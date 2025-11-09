@@ -6,6 +6,10 @@ require('dotenv').config();
 
 const connectDB = require('./config/database');
 
+// Route imports
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+
 // Initialize Express app
 const app = express();
 
@@ -38,9 +42,14 @@ app.get('/api/health', (req, res) => {
         status: 'success',
         message: 'HVI-Continuity Platform API is running',
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV
+        environment: process.env.NODE_ENV,
+        database: 'Connected' // This would be enhanced with actual DB status check
     });
 });
+
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // Basic API info endpoint
 app.get('/api', (req, res) => {
@@ -50,9 +59,9 @@ app.get('/api', (req, res) => {
         description: '4D Human Risk Assessment System',
         endpoints: {
             health: '/api/health',
+            auth: '/api/auth',
             users: '/api/users',
-            assessments: '/api/assessments',
-            auth: '/api/auth'
+            assessments: '/api/assessments'
         }
     });
 });
@@ -84,6 +93,7 @@ const server = app.listen(PORT, () => {
     console.log(\📊 Environment: \\);
     console.log(\🌐 Frontend URL: \\);
     console.log(\🗄️  Database: \\);
+    console.log(\⏰ Started at: \\);
 });
 
 // Graceful shutdown
