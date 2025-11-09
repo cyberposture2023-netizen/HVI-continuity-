@@ -13,9 +13,6 @@ const userRoutes = require('./routes/userRoutes');
 // Initialize Express app
 const app = express();
 
-// Connect to MongoDB
-connectDB();
-
 // Security middleware
 app.use(helmet());
 
@@ -36,14 +33,14 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
+// Health check endpoint (works even without database)
 app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'success',
         message: 'HVI-Continuity Platform API is running',
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
-        database: 'Connected' // This would be enhanced with actual DB status check
+        database: 'Checking...'
     });
 });
 
@@ -84,24 +81,51 @@ app.use('*', (req, res) => {
     });
 });
 
-// Start server with port management
+// Start server with better error handling
 const PORT = process.env.PORT || 5000;
 
-// Check if port is available, if not increment
-const server = app.listen(PORT, () => {
-    console.log(\HVI-Continuity Platform API running on port \\);
-    console.log(\Environment: \\);
-    console.log(\Frontend URL: \\);
-    console.log(\Database: \\);
-    console.log(\Started at: \\);
-});
+// Connect to MongoDB and start server
+async function startServer() {
+    try {
+        console.log('Attempting to connect to MongoDB...');
+        await connectDB();
+        console.log('MongoDB connected successfully!');
+        
+        app.listen(PORT, () => {
+            console.log('HVI-Continuity Platform API running on port ' + PORT);
+            console.log('Environment: ' + process.env.NODE_ENV);
+            console.log('Frontend URL: ' + (process.env.FRONTEND_URL || 'http://localhost:3000'));
+            console.log('Database: ' + process.env.MONGODB_URI);
+            console.log('Started at: ' + new Date().toISOString());
+            console.log('Health check: http://localhost:' + PORT + '/api/health');
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error.message);
+        console.log('Starting server without database connection...');
+        
+        // Update health endpoint to show database status
+        app.get('/api/health', (req, res) => {
+            res.status(200).json({
+                status: 'success',
+                message: 'HVI-Continuity Platform API is running (database connection failed)',
+                timestamp: new Date().toISOString(),
+                environment: process.env.NODE_ENV,
+                database: 'Disconnected - ' + error.message
+            });
+        });
+        
+        app.listen(PORT, () => {
+            console.log('HVI-Continuity Platform API running on port ' + PORT + ' (without database)');
+            console.log('Note: MongoDB connection failed. Some features will not work.');
+            console.log('Health check: http://localhost:' + PORT + '/api/health');
+        });
+    }
+}
+
+startServer();
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
     console.log('SIGTERM received, shutting down gracefully');
-    server.close(() => {
-        console.log('Process terminated');
-    });
+    process.exit(0);
 });
-
-module.exports = app;
