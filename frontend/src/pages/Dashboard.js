@@ -1,86 +1,189 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout, { DashboardCard } from '../components/Dashboard/DashboardLayout';
+import { useNavigate } from 'react-router-dom';
+import DashboardLayout from '../components/Dashboard/DashboardLayout';
 import HVIScoreCard from '../components/Dashboard/HVIScoreCard';
 import DimensionRadarChart from '../components/Dashboard/DimensionRadarChart';
 import DepartmentHeatmap from '../components/Dashboard/DepartmentHeatmap';
+import AssessmentProgress from '../components/Dashboard/AssessmentProgress';
+import apiService from '../services/api';
+import './Dashboard.css';
 
 const Dashboard = () => {
-  const [dashboardData, setDashboardData] = useState(null);
+  const navigate = useNavigate();
+  const [dashboardData, setDashboardData] = useState({
+    currentScore: 0,
+    scoreTrend: [],
+    dimensionScores: { D1: 0, D2: 0, D3: 0, D4: 0 },
+    departmentData: [],
+    assessmentProgress: { completed: 0, total: 4 },
+    recentAssessments: []
+  });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        // Mock data - will be replaced with API calls
-        setTimeout(() => {
-          setDashboardData({
-            currentScore: 720,
-            trendData: [
-              { date: '2024-01-01', score: 650 },
-              { date: '2024-01-15', score: 680 },
-              { date: '2024-02-01', score: 710 },
-              { date: '2024-02-15', score: 690 },
-              { date: '2024-03-01', score: 720 },
-            ],
-            dimensions: {
-              behavioral: 75,
-              technical: 82,
-              organizational: 68,
-              environmental: 71
-            },
-            departments: [
-              { department: 'Engineering', score: 720, employeeCount: 45 },
-              { department: 'Sales', score: 580, employeeCount: 32 },
-              { department: 'Marketing', score: 650, employeeCount: 28 },
-              { department: 'HR', score: 810, employeeCount: 18 },
-              { department: 'Finance', score: 780, employeeCount: 22 },
-              { department: 'Operations', score: 520, employeeCount: 35 },
-            ]
-          });
-          setLoading(false);
-        }, 1000);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
+    loadDashboardData();
   }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch all dashboard data in parallel
+      const [scoresResponse, trendResponse, currentAssessmentResponse] = await Promise.all([
+        apiService.getUserScores(),
+        apiService.getScoreTrend(),
+        apiService.getCurrentAssessment()
+      ]);
+
+      const userScores = scoresResponse.data;
+      const scoreTrend = trendResponse.data;
+      const currentAssessment = currentAssessmentResponse.data;
+
+      // Calculate assessment progress
+      const completedDimensions = currentAssessment ? 
+        Object.values(currentAssessment.dimensions).filter(dim => dim.completed).length : 0;
+
+      // Prepare dimension scores for radar chart
+      const dimensionScores = currentAssessment ? {
+        D1: currentAssessment.dimensions.D1?.score || 0,
+        D2: currentAssessment.dimensions.D2?.score || 0,
+        D3: currentAssessment.dimensions.D3?.score || 0,
+        D4: currentAssessment.dimensions.D4?.score || 0
+      } : { D1: 0, D2: 0, D3: 0, D4: 0 };
+
+      // Fetch department data if available
+      let departmentData = [];
+      try {
+        const deptResponse = await apiService.getDepartmentScores();
+        departmentData = deptResponse.data;
+      } catch (deptError) {
+        console.log('Department data not available, using mock data structure');
+        departmentData = [
+          { department: 'IT', score: 72, riskLevel: 'medium' },
+          { department: 'HR', score: 65, riskLevel: 'medium' },
+          { department: 'Finance', score: 58, riskLevel: 'high' },
+          { department: 'Operations', score: 81, riskLevel: 'low' }
+        ];
+      }
+
+      setDashboardData({
+        currentScore: userScores.overallHVI || currentAssessment?.overallScore || 0,
+        scoreTrend: scoreTrend,
+        dimensionScores: dimensionScores,
+        departmentData: departmentData,
+        assessmentProgress: {
+          completed: completedDimensions,
+          total: 4,
+          lastUpdated: currentAssessment?.updatedAt
+        },
+        recentAssessments: currentAssessment ? [currentAssessment] : []
+      });
+
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError('Failed to load dashboard data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartAssessment = () => {
+    navigate('/assessment');
+  };
+
+  const handleViewAssessment = (assessmentId) => {
+    navigate(`/assessment/${assessmentId}`);
+  };
 
   if (loading) {
     return (
-      <div style={{ 
-        padding: '40px', 
-        textAlign: 'center',
-        fontFamily: 'Arial, sans-serif'
-      }}>
-        <h2>Loading HVI Dashboard Data...</h2>
-        <p>Please wait while we load your risk assessment data.</p>
+      <div className="dashboard-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading your HVI dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-error">
+        <h3>Unable to Load Dashboard</h3>
+        <p>{error}</p>
+        <button onClick={loadDashboardData}>Retry</button>
       </div>
     );
   }
 
   return (
-    <DashboardLayout title="HVI Risk Dashboard">
-      <DashboardCard size="medium">
-        <HVIScoreCard 
-          currentScore={dashboardData.currentScore}
-          trendData={dashboardData.trendData}
-          peerAverage={650}
+    <div className="dashboard">
+      <div className="dashboard-header">
+        <h1>HVI Continuity Dashboard</h1>
+        <p>Monitor your human vulnerability index and assessment progress</p>
+      </div>
+
+      {/* Assessment Progress Section */}
+      <div className="dashboard-section">
+        <AssessmentProgress 
+          progress={dashboardData.assessmentProgress}
+          onStartAssessment={handleStartAssessment}
         />
-      </DashboardCard>
+      </div>
 
-      <DashboardCard size="medium">
-        <DimensionRadarChart data={dashboardData.dimensions} />
-      </DashboardCard>
+      {/* Main Score and Visualization Section */}
+      <div className="dashboard-main-grid">
+        <div className="score-card-section">
+          <HVIScoreCard 
+            score={dashboardData.currentScore}
+            trend={dashboardData.scoreTrend}
+            lastUpdated={dashboardData.assessmentProgress.lastUpdated}
+          />
+        </div>
+        
+        <div className="radar-chart-section">
+          <DimensionRadarChart 
+            dimensionScores={dashboardData.dimensionScores}
+            onDimensionClick={(dimension) => navigate('/assessment', { state: { startDimension: dimension } })}
+          />
+        </div>
+      </div>
 
-      <DashboardCard size="large">
-        <DepartmentHeatmap data={dashboardData.departments} />
-      </DashboardCard>
-    </DashboardLayout>
+      {/* Department Overview Section */}
+      <div className="dashboard-section">
+        <DepartmentHeatmap 
+          departmentData={dashboardData.departmentData}
+          onDepartmentSelect={(dept) => console.log('Selected department:', dept)}
+        />
+      </div>
+
+      {/* Recent Assessments Section */}
+      {dashboardData.recentAssessments.length > 0 && (
+        <div className="dashboard-section">
+          <h3>Recent Assessments</h3>
+          <div className="recent-assessments">
+            {dashboardData.recentAssessments.map(assessment => (
+              <div key={assessment._id} className="assessment-card">
+                <div className="assessment-info">
+                  <span className="assessment-date">
+                    {new Date(assessment.updatedAt).toLocaleDateString()}
+                  </span>
+                  <span className="assessment-score">
+                    Overall HVI: {assessment.overallScore || 0}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => handleViewAssessment(assessment._id)}
+                  className="view-assessment-btn"
+                >
+                  View Details
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
 export default Dashboard;
-

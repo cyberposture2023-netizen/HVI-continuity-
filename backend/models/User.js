@@ -1,97 +1,32 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    minlength: 3,
-    maxlength: 30
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true
-  },
-  password: {
-    type: String,
-    required: true,
-    minlength: 6
-  },
-  firstName: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 50
-  },
-  lastName: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 50
-  },
-  department: {
-    type: String,
-    required: true,
-    enum: ['IT', 'HR', 'Finance', 'Marketing', 'Operations', 'Executive']
-  },
-  role: {
-    type: String,
-    enum: ['user', 'manager', 'admin'],
-    default: 'user'
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  scores: {
-    overall: { type: Number, default: 0 },
-    behavioral: { type: Number, default: 0 },
-    technical: { type: Number, default: 0 },
-    organizational: { type: Number, default: 0 },
-    environmental: { type: Number, default: 0 }
-  },
-  lastAssessmentDate: Date,
-  profileCompleted: {
-    type: Boolean,
-    default: false
-  }
-}, {
-  timestamps: true
-});
-
-// Index for faster queries
-userSchema.index({ email: 1 });
-userSchema.index({ department: 1 });
-userSchema.index({ role: 1 });
-
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  department: { type: String, default: 'General' },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
   
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+  // HVI Scores
+  overallHVI: { type: Number, default: 0 },
+  d1Score: { type: Number, default: 0 }, // Behavioral
+  d2Score: { type: Number, default: 0 }, // Technical  
+  d3Score: { type: Number, default: 0 }, // Organizational
+  d4Score: { type: Number, default: 0 }, // Environmental
+  
+  // Assessment tracking
+  lastAssessmentDate: { type: Date },
+  assessmentCount: { type: Number, default: 0 },
+  
+  // Timestamps
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
-// Method to compare password
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
-
-// Method to get user profile (without password)
-userSchema.methods.getProfile = function() {
-  const userObject = this.toObject();
-  delete userObject.password;
-  return userObject;
-};
+// Update the updatedAt field before saving
+userSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
 
 module.exports = mongoose.model('User', userSchema);
