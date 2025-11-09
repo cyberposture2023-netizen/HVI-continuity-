@@ -12,10 +12,10 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Add auth token here when authentication is implemented
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
@@ -28,32 +28,84 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error.response?.data || error.message);
+    
+    // Handle authentication errors
+    if (error.response?.status === 401) {
+      localStorage.removeItem('authToken');
+      // Don't redirect for now to avoid breaking the demo
+      // window.location.href = '/login';
+    }
+    
     return Promise.reject(error);
   }
 );
 
-// Enhanced API service for dashboard and assessment data
+// Comprehensive API service for all application needs
 const apiService = {
-  // Assessment data endpoints
+  // ===== HEALTH CHECK =====
+  health: () => api.get('/health'),
+
+  // ===== AUTHENTICATION ENDPOINTS =====
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/register', userData),
+  logout: () => api.post('/auth/logout'),
+  verify: () => api.get('/auth/verify'),
+
+  // ===== ASSESSMENT ENDPOINTS =====
+  startAssessment: () => api.post('/assessments/start'),
   getCurrentAssessment: () => api.get('/assessments/current'),
   getAssessmentHistory: () => api.get('/assessments/history'),
   getAssessmentResults: (assessmentId) => api.get(`/assessments/${assessmentId}/results`),
-  
-  // User score data
-  getUserScores: () => api.get('/dashboard/scores'),
-  getScoreTrend: () => api.get('/dashboard/score-trend'),
-  
-  // Department and organizational data
+  submitDimensionAnswers: (assessmentId, dimension, answers) => 
+    api.post(`/assessments/${assessmentId}/dimension/${dimension}`, { answers }),
   getDepartmentScores: () => api.get('/assessments/department-scores'),
   getOrganizationOverview: () => api.get('/assessments/organization-overview'),
 
-  // Assessment actions
-  startAssessment: () => api.post('/assessments/start'),
-  submitDimensionAnswers: (assessmentId, dimension, answers) => 
-    api.post(`/assessments/${assessmentId}/dimension/${dimension}`, { answers }),
-
-  // Questions
+  // ===== QUESTIONS ENDPOINTS =====
   getQuestionsByDimension: (dimension) => api.get(`/questions/dimension/${dimension}`),
+  getAllQuestions: () => api.get('/questions'),
+
+  // ===== DASHBOARD ENDPOINTS =====
+  getUserScores: () => api.get('/dashboard/scores'),
+  getScoreTrend: () => api.get('/dashboard/score-trend'),
+
+  // ===== USER PROFILE ENDPOINTS =====
+  getUserProfile: () => api.get('/users/profile'),
+  updateUserProfile: (userData) => api.put('/users/profile', userData),
 };
 
+// Legacy export for backward compatibility
 export default apiService;
+
+// Named exports for specific service groups
+export const authAPI = {
+  login: apiService.login,
+  register: apiService.register,
+  logout: apiService.logout,
+  verify: apiService.verify,
+};
+
+export const assessmentAPI = {
+  start: apiService.startAssessment,
+  getCurrent: apiService.getCurrentAssessment,
+  getHistory: apiService.getAssessmentHistory,
+  getResults: apiService.getAssessmentResults,
+  submitDimension: apiService.submitDimensionAnswers,
+  getDepartmentScores: apiService.getDepartmentScores,
+  getOrganizationOverview: apiService.getOrganizationOverview,
+};
+
+export const questionsAPI = {
+  getByDimension: apiService.getQuestionsByDimension,
+  getAll: apiService.getAllQuestions,
+};
+
+export const dashboardAPI = {
+  getUserScores: apiService.getUserScores,
+  getScoreTrend: apiService.getScoreTrend,
+};
+
+export const usersAPI = {
+  getProfile: apiService.getUserProfile,
+  updateProfile: apiService.updateUserProfile,
+};
