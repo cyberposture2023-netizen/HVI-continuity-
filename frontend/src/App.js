@@ -5,6 +5,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import AssessmentTake from './components/AssessmentTake';
+import AssessmentResults from './components/AssessmentResults';
 import './App.css';
 
 const AppContent = () => {
@@ -28,6 +29,7 @@ const AppContent = () => {
             <Routes>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/assessment/:assessmentId" element={<AssessmentTake />} />
+                <Route path="/assessment/:assessmentId/results" element={<AssessmentResults />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
