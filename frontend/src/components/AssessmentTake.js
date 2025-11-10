@@ -71,11 +71,13 @@ const AssessmentTake = () => {
 
             const result = await AssessmentService.submitAssessmentAnswers(assessmentId, answers);
             
-            // Show results
-            alert(\Assessment submitted successfully!\\nScore: \\\nCorrect Answers: \\);
-            
-            // Navigate back to dashboard
-            navigate('/dashboard');
+            // Navigate to results page
+            navigate(`/assessment/${assessmentId}/results`, { 
+                state: { 
+                    results: result,
+                    assessment: assessment
+                }
+            });
         } catch (error) {
             setError('Failed to submit assessment: ' + error.message);
             console.error('Error submitting assessment:', error);
@@ -145,7 +147,7 @@ const AssessmentTake = () => {
                 <div className="progress-bar">
                     <div 
                         className="progress-fill"
-                        style={{ width: \\%\ }}
+                        style={{ width: `${calculateProgress()}%` }}
                     ></div>
                 </div>
                 <div className="progress-stats">
@@ -166,7 +168,7 @@ const AssessmentTake = () => {
                     {currentQuestion.options.map((option, optionIndex) => (
                         <div 
                             key={optionIndex}
-                            className={\option-card \\}
+                            className={`option-card ${answers[currentQuestionIndex] === optionIndex ? 'selected' : ''}`}
                             onClick={() => handleAnswerSelect(currentQuestionIndex, optionIndex)}
                         >
                             <div className="option-indicator">
@@ -226,9 +228,9 @@ const AssessmentTake = () => {
                     {assessment.questions.map((_, index) => (
                         <button
                             key={index}
-                            className={\question-dot \ \\}
+                            className={`question-dot ${currentQuestionIndex === index ? 'active' : ''} ${answers.hasOwnProperty(index) ? 'answered' : 'unanswered'}`}
                             onClick={() => setCurrentQuestionIndex(index)}
-                            title={\Question \: \\}
+                            title={`Question ${index + 1}: ${answers.hasOwnProperty(index) ? 'Answered' : 'Unanswered'}`}
                         >
                             {index + 1}
                         </button>
@@ -240,4 +242,3 @@ const AssessmentTake = () => {
 };
 
 export default AssessmentTake;
-
