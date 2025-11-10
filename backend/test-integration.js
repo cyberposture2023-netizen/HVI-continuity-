@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('./models/User');
 const Assessment = require('./models/Assessment');
-const Question = require('./models/Question');
 const bcrypt = require('bcrypt');
 
 async function testUserAssessmentIntegration() {
@@ -72,6 +71,20 @@ async function testUserAssessmentIntegration() {
                         category: 'Data Protection',
                         userAnswer: 'Follow company protocols',
                         userScore: 90
+                    },
+                    {
+                        text: 'Do you report security incidents promptly?',
+                        dimension: 'D3',
+                        category: 'Incident Response',
+                        userAnswer: 'Always',
+                        userScore: 95
+                    },
+                    {
+                        text: 'Are you aware of company security policies?',
+                        dimension: 'D4',
+                        category: 'Policy Awareness',
+                        userAnswer: 'Yes, thoroughly',
+                        userScore: 80
                     }
                 ]
             });
@@ -82,12 +95,16 @@ async function testUserAssessmentIntegration() {
             
             // Add assessment to user's assessments array
             await User.findByIdAndUpdate(testUser._id, {
-                $push: { assessments: testAssessment._id }
+                \$push: { assessments: testAssessment._id }
             });
             
             console.log('✅ Created test assessment with scores:', testAssessment.scores);
         } else {
             console.log('✅ Test assessment already exists');
+            // Recalculate scores to ensure they're current
+            testAssessment.calculateScores();
+            await testAssessment.save();
+            console.log('✅ Updated assessment scores:', testAssessment.scores);
         }
         
         // Test query: Get user with their assessments
@@ -122,14 +139,24 @@ async function testUserAssessmentIntegration() {
         console.log('✅ Dashboard statistics:', {
             totalAssessments,
             completedAssessments,
-            completionRate: Math.round((completedAssessments / totalAssessments) * 100) + '%'
+            completionRate: totalAssessments > 0 ? Math.round((completedAssessments / totalAssessments) * 100) + '%' : '0%'
         });
         
         console.log('🎉 All integration tests passed!');
         console.log('📊 Test Assessment Scores:', testAssessment.scores);
         
+        return {
+            success: true,
+            user: testUser,
+            assessment: testAssessment
+        };
+        
     } catch (error) {
         console.error('❌ Integration test failed:', error);
+        return {
+            success: false,
+            error: error.message
+        };
     } finally {
         await mongoose.connection.close();
         console.log('🔌 Database connection closed');

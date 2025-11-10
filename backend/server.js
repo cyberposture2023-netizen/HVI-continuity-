@@ -1,12 +1,8 @@
-// HVI-Continuity Platform - Clean Main Server
-// Fixed version without syntax errors
-
-console.log("🚀 Starting HVI-Continuity Platform Server...");
-
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const path = require("path");
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
+require('dotenv').config();
 
 const app = express();
 
@@ -21,130 +17,62 @@ app.use('/api/questions', require('./routes/questions'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/users', require('./routes/users'));
 
-// Basic health endpoints
-app.get("/api/health", (req, res) => {
+// Health check route
+app.get('/api/health', (req, res) => {
     res.json({ 
-        status: "healthy", 
-        timestamp: new Date().toISOString(),
-        message: "Main server is running"
+        status: 'OK', 
+        message: 'HVI Continuity Platform API is running',
+        timestamp: new Date().toISOString()
     });
 });
 
-app.get("/api/health-enhanced", (req, res) => {
-    res.json({
-        status: "healthy",
-        timestamp: new Date().toISOString(),
-        port: process.env.PORT || 5000,
-        database: "checking",
-        endpoints: [
-            "/api/health",
-            "/api/health-enhanced",
-            "/api/assessments", 
-            "/api/questions",
-            "/api/dashboard/scores",
-            "/api/users"
-        ],
-        memory: process.memoryUsage(),
-        uptime: process.uptime()
+// Serve static files from React build in production
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../frontend/build')));
+    
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
     });
+}
+
+// Database connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/hvi-continuity';
+mongoose.connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+.then(() => console.log('✅ MongoDB connected successfully to: ' + MONGODB_URI))
+.catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+    console.log('💡 Make sure MongoDB is running on localhost:27017');
 });
 
-// Try to load routes with error handling
-try {
-    const assessmentRoutes = require("./routes/assessments");
-    app.use("/api/assessments", assessmentRoutes);
-    console.log("✅ Assessments routes loaded");
-} catch (error) {
-    console.log("❌ Assessments routes failed:", error.message);
-    app.use("/api/assessments", (req, res) => {
-        res.json({ error: "Assessments module not available", message: error.message });
-    });
-}
-
-try {
-    const questionRoutes = require("./routes/questions");
-    app.use("/api/questions", questionRoutes);
-    console.log("✅ Questions routes loaded");
-} catch (error) {
-    console.log("❌ Questions routes failed:", error.message);
-    app.use("/api/questions", (req, res) => {
-        res.json({ error: "Questions module not available", message: error.message });
-    });
-}
-
-try {
-    const dashboardRoutes = require("./routes/dashboard");
-    app.use("/api/dashboard", dashboardRoutes);
-    console.log("✅ Dashboard routes loaded");
-} catch (error) {
-    console.log("❌ Dashboard routes failed:", error.message);
-    app.use("/api/dashboard", (req, res) => {
-        res.json({ error: "Dashboard module not available", message: error.message });
-    });
-}
-
-try {
-    const userRoutes = require("./routes/users");
-    app.use("/api/users", userRoutes);
-    console.log("✅ Users routes loaded");
-} catch (error) {
-    console.log("❌ Users routes failed:", error.message);
-    app.use("/api/users", (req, res) => {
-        res.json({ error: "Users module not available", message: error.message });
-    });
-}
-
-try {
-    const authRoutes = require("./routes/auth");
-    app.use("/api/auth", authRoutes);
-    console.log("✅ Auth routes loaded");
-} catch (error) {
-    console.log("❌ Auth routes failed:", error.message);
-    app.use("/api/auth", (req, res) => {
-        res.json({ error: "Auth module not available", message: error.message });
-    });
-}
-
-// MongoDB connection with timeout
-setTimeout(() => {
-    mongoose.connect("mongodb://localhost:27017/hvi-continuity", {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-    })
-    .then(() => console.log("✅ MongoDB connected"))
-    .catch(err => console.log("❌ MongoDB connection failed:", err.message));
-}, 1000);
-
-// 404 handler
-app.use("*", (req, res) => {
-    res.status(404).json({ 
-        error: "Endpoint not found",
-        path: req.originalUrl
-    });
-});
-
-// Error handler
-app.use((error, req, res, next) => {
-    console.error("Server error:", error);
-    res.status(500).json({ 
-        error: "Internal server error",
-        message: error.message
-    });
-});
-
-// Start server
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log("✅ Server running on port " + PORT);
-    console.log("📍 API available at: http://localhost:" + PORT + "/api");
-    console.log("🔧 Health check: http://localhost:" + PORT + "/api/health");
-    console.log("🎉 HVI-Continuity Platform backend is ready!");
+    console.log('\n🚀 HVI Continuity Platform Server Started');
+    console.log('=========================================');
+    console.log('✅ Server is running on port: ' + PORT);
+    console.log('✅ Environment: ' + (process.env.NODE_ENV || 'development'));
+    console.log('✅ API Base URL: http://localhost:' + PORT + '/api');
+    console.log('✅ Health Check: http://localhost:' + PORT + '/api/health');
+    console.log('\n📊 Available API Endpoints:');
+    console.log('   • POST   /api/auth/register     - User registration');
+    console.log('   • POST   /api/auth/login        - User login');
+    console.log('   • POST   /api/auth/refresh      - Refresh token');
+    console.log('   • GET    /api/auth/profile      - Get user profile');
+    console.log('   • PUT    /api/auth/profile      - Update profile');
+    console.log('   • GET    /api/assessments       - Get user assessments');
+    console.log('   • POST   /api/assessments       - Create assessment');
+    console.log('   • GET    /api/assessments/:id   - Get assessment by ID');
+    console.log('   • PUT    /api/assessments/:id   - Update assessment');
+    console.log('   • DELETE /api/assessments/:id   - Delete assessment');
+    console.log('   • GET    /api/questions         - Get questions');
+    console.log('   • POST   /api/questions/:id/answer - Submit answer');
+    console.log('   • GET    /api/dashboard         - User dashboard');
+    console.log('   • GET    /api/dashboard/admin   - Admin dashboard');
+    console.log('   • GET    /api/users/profile     - User profile');
+    console.log('   • PUT    /api/users/profile     - Update profile');
+    console.log('   • GET    /api/users/assessments - User assessments');
+    console.log('=========================================\n');
 });
-
-module.exports = app;
-
-
-
-
-
