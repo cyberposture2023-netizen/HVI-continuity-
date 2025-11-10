@@ -11,12 +11,41 @@ const apiClient = axios.create({
   }
 })
 
+// Request interceptor for logging
+apiClient.interceptors.request.use(
+  (config) => {
+    console.log(`🔄 API Call: ${config.method?.toUpperCase()} ${config.url}`)
+    return config
+  },
+  (error) => {
+    console.error('❌ API Request Error:', error)
+    return Promise.reject(error)
+  }
+)
+
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`✅ API Success: ${response.status} ${response.config.url}`)
+    return response
+  },
   (error) => {
-    console.error('API Error:', error)
-    throw error
+    console.error('❌ API Response Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      message: error.message
+    })
+    
+    if (error.code === 'ECONNREFUSED') {
+      error.message = 'Cannot connect to backend server. Please ensure the backend is running on port 5000.'
+    } else if (error.response?.status === 404) {
+      error.message = 'API endpoint not found. Please check the backend routes.'
+    } else if (error.response?.status >= 500) {
+      error.message = 'Backend server error. Please check the backend logs.'
+    }
+    
+    return Promise.reject(error)
   }
 )
 
