@@ -145,3 +145,4 @@ function calculateHVIScore(dimensionScores) {
 }
 
 module.exports = router;
+

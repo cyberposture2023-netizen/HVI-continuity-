@@ -77,3 +77,4 @@ router.get('/department-stats', async (req, res) => {
 });
 
 module.exports = router;
+
