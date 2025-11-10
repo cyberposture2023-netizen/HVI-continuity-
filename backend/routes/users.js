@@ -46,7 +46,7 @@ router.get('/profile/:id', async (req, res) => {
 // Update user
 router.put('/:id', async (req, res) => {
     try {
-        const user = await User.findByIdAndUpdate(
+        const user = await User.findByIdAndUpdate(;
             req.params.id,
             req.body,
             { new: true, runValidators: true }

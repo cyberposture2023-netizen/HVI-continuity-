@@ -78,7 +78,7 @@ router.post('/:id/submit', async (req, res) => {
                     'scores.dimension2': scores.dimension2,
                     'scores.dimension3': scores.dimension3,
                     'scores.dimension4': scores.dimension4,
-                    'scores.overall': hviScore
+                    'scores.overall': hviScore;
                 }
             });
         }
@@ -86,7 +86,7 @@ router.post('/:id/submit', async (req, res) => {
         res.json({
             assessment: updatedAssessment,
             scores: scores,
-            hviScore: hviScore
+            hviScore: hviScore;
         });
         
     } catch (error) {
@@ -133,7 +133,7 @@ function calculateHVIScore(dimensionScores) {
         dimension1: 0.25,
         dimension2: 0.25, 
         dimension3: 0.25,
-        dimension4: 0.25
+        dimension4: 0.25;
     };
     
     let weightedSum = 0;

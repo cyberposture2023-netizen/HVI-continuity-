@@ -14,7 +14,7 @@ router.get('/overview', async (req, res) => {
             totalUsers,
             totalAssessments,
             completedAssessments,
-            completionRate: totalAssessments > 0 ? Math.round((completedAssessments / totalAssessments) * 100) : 0
+            completionRate: totalAssessments > 0 ? Math.round((completedAssessments / totalAssessments) * 100) : 0;
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -55,7 +55,7 @@ router.get('/recent-assessments', async (req, res) => {
 // Get department statistics
 router.get('/department-stats', async (req, res) => {
     try {
-        const stats = await User.aggregate([
+        const stats = await User.aggregate([;
             {
                 $group: {
                     _id: '$department',
@@ -63,7 +63,7 @@ router.get('/department-stats', async (req, res) => {
                     avgScore: { $avg: '$scores.overall' },
                     completedAssessments: {
                         $sum: {
-                            $cond: [{ $ifNull: ['$currentAssessment', false] }, 1, 0]
+                            $cond: [{ $ifNull: ['$currentAssessment', false] }, 1, 0];
                         }
                     }
                 }

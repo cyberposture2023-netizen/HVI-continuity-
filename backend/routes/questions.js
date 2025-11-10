@@ -3,104 +3,104 @@ const router = express.Router();
 
 // Mock questions data - in real implementation, this would come from a database
 const questions = {
-    "questions": [
+    "questions": [;
         {
             "id": "1",
             "dimension": "dimension1",
             "text": "How often do you follow established security protocols?",
-            "options": [
+            "options": [;
                 {"value": 1, "text": "Never"},
                 {"value": 2, "text": "Rarely"},
                 {"value": 3, "text": "Sometimes"},
                 {"value": 4, "text": "Often"},
                 {"value": 5, "text": "Always"}
-            ]
+            ];
         },
         {
             "id": "2", 
             "dimension": "dimension1",
             "text": "Do you report security incidents promptly?",
-            "options": [
+            "options": [;
                 {"value": 1, "text": "Never"},
                 {"value": 2, "text": "Rarely"}, 
                 {"value": 3, "text": "Sometimes"},
                 {"value": 4, "text": "Often"},
                 {"value": 5, "text": "Always"}
-            ]
+            ];
         },
         {
             "id": "3",
             "dimension": "dimension2", 
             "text": "How aware are you of phishing attempts?",
-            "options": [
+            "options": [;
                 {"value": 1, "text": "Not aware"},
                 {"value": 2, "text": "Slightly aware"},
                 {"value": 3, "text": "Moderately aware"},
                 {"value": 4, "text": "Very aware"},
                 {"value": 5, "text": "Extremely aware"}
-            ]
+            ];
         },
         {
             "id": "4",
             "dimension": "dimension2",
             "text": "Do you verify the authenticity of requests for sensitive information?",
-            "options": [
+            "options": [;
                 {"value": 1, "text": "Never"},
                 {"value": 2, "text": "Rarely"},
                 {"value": 3, "text": "Sometimes"},
                 {"value": 4, "text": "Often"},
                 {"value": 5, "text": "Always"}
-            ]
+            ];
         },
         {
             "id": "5",
             "dimension": "dimension3",
             "text": "How often do you update your passwords?",
-            "options": [
+            "options": [;
                 {"value": 1, "text": "Never"},
                 {"value": 2, "text": "Only when required"},
                 {"value": 3, "text": "Every 6 months"},
                 {"value": 4, "text": "Every 3 months"},
                 {"value": 5, "text": "Monthly or more frequently"}
-            ]
+            ];
         },
         {
             "id": "6",
             "dimension": "dimension3",
             "text": "Do you use multi-factor authentication when available?",
-            "options": [
+            "options": [;
                 {"value": 1, "text": "Never"},
                 {"value": 2, "text": "Rarely"},
                 {"value": 3, "text": "Sometimes"},
                 {"value": 4, "text": "Often"},
                 {"value": 5, "text": "Always"}
-            ]
+            ];
         },
         {
             "id": "7",
             "dimension": "dimension4",
             "text": "How do you handle sensitive data?",
-            "options": [
+            "options": [;
                 {"value": 1, "text": "No special handling"},
                 {"value": 2, "text": "Basic precautions"},
                 {"value": 3, "text": "Follow some guidelines"},
                 {"value": 4, "text": "Follow most guidelines"},
                 {"value": 5, "text": "Strictly follow all guidelines"}
-            ]
+            ];
         },
         {
             "id": "8",
             "dimension": "dimension4",
             "text": "Are you cautious about sharing work information on social media?",
-            "options": [
+            "options": [;
                 {"value": 1, "text": "Not cautious at all"},
                 {"value": 2, "text": "Slightly cautious"},
                 {"value": 3, "text": "Moderately cautious"},
                 {"value": 4, "text": "Very cautious"},
                 {"value": 5, "text": "Extremely cautious"}
-            ]
+            ];
         }
-    ]
+    ];
 };
 
 // Get all questions

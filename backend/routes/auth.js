@@ -12,13 +12,13 @@ router.post('/register', async (req, res) => {
 
     // Check if user already exists
     const existingUser = await User.findOne({
-      $or: [{ email }, { username }]
+      $or: [{ email }, { username }];
     });
 
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User with this email or username already exists'
+        message: 'User with this email or username already exists';
       });
     }
 
@@ -29,13 +29,13 @@ router.post('/register', async (req, res) => {
       password,
       firstName,
       lastName,
-      department
+      department;
     });
 
     await user.save();
 
     // Generate JWT token
-    const token = jwt.sign(
+    const token = jwt.sign(;
       { id: user._id },
       process.env.JWT_SECRET || 'fallback_secret',
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
@@ -45,14 +45,14 @@ router.post('/register', async (req, res) => {
       success: true,
       message: 'User registered successfully',
       token,
-      user: user.getProfile()
+      user: user.getProfile();
     });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({
       success: false,
       message: 'Error registering user',
-      error: error.message
+      error: error.message;
     });
   }
 });
@@ -67,7 +67,7 @@ router.post('/login', async (req, res) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email or password';
       });
     }
 
@@ -76,7 +76,7 @@ router.post('/login', async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email or password';
       });
     }
 
@@ -84,12 +84,12 @@ router.post('/login', async (req, res) => {
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
-        message: 'Account is deactivated'
+        message: 'Account is deactivated';
       });
     }
 
     // Generate JWT token
-    const token = jwt.sign(
+    const token = jwt.sign(;
       { id: user._id },
       process.env.JWT_SECRET || 'fallback_secret',
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
@@ -99,14 +99,14 @@ router.post('/login', async (req, res) => {
       success: true,
       message: 'Login successful',
       token,
-      user: user.getProfile()
+      user: user.getProfile();
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Error during login',
-      error: error.message
+      error: error.message;
     });
   }
 });
@@ -116,14 +116,14 @@ router.get('/me', authenticateToken, async (req, res) => {
   try {
     res.json({
       success: true,
-      user: req.user.getProfile()
+      user: req.user.getProfile();
     });
   } catch (error) {
     console.error('Profile fetch error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching user profile',
-      error: error.message
+      error: error.message;
     });
   }
 });
@@ -133,13 +133,13 @@ router.put('/profile', authenticateToken, async (req, res) => {
   try {
     const { firstName, lastName, department } = req.body;
     
-    const user = await User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(;
       req.user.id,
       { 
         firstName, 
         lastName, 
         department,
-        profileCompleted: true 
+        profileCompleted: true ;
       },
       { new: true }
     ).select('-password');
@@ -147,14 +147,14 @@ router.put('/profile', authenticateToken, async (req, res) => {
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      user: user.getProfile()
+      user: user.getProfile();
     });
   } catch (error) {
     console.error('Profile update error:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating profile',
-      error: error.message
+      error: error.message;
     });
   }
 });

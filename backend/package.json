@@ -38,6 +38,9 @@
     "readiness": "node readiness-verify.js",
     "server:repair": "node server-repair.js",
     "start:verify": "node verify-startup.js",
-    "test:endpoints": "node test-all-endpoints.js"
+    "test:endpoints": "node test-all-endpoints.js",
+    "validate:syntax": "node syntax-validator.js",
+    "clean:files": "node file-cleaner.js",
+    "report:stability": "node stability-report.js"
   }
 }
