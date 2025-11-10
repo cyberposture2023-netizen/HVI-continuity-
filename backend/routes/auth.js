@@ -1,160 +1,383 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const { authenticateToken } = require('../middleware/auth');
-
 const router = express.Router();
+const User = require('../models/User');
+const JWTUtils = require('../utils/jwt-utils');
+const authMiddleware = require('../middleware/auth');
 
-// Register new user
-router.post('/register', async (req, res) => {
+// Input validation middleware
+const validateRegistration = (req, res, next) => {
+  const { username, email, password, firstName, lastName, department } = req.body;
+  
+  if (!username || !email || !password || !firstName || !lastName || !department) {
+    return res.status(400).json({
+      success: false,
+      message: 'All fields are required',
+      code: 'MISSING_FIELDS'
+    });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 6 characters long',
+      code: 'PASSWORD_TOO_SHORT'
+    });
+  }
+
+  if (!email.match(/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide a valid email address',
+      code: 'INVALID_EMAIL'
+    });
+  }
+
+  next();
+};
+
+const validateLogin = (req, res, next) => {
+  const { identifier, password } = req.body;
+
+  if (!identifier || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email/username and password are required',
+      code: 'MISSING_CREDENTIALS'
+    });
+  }
+
+  next();
+};
+
+// @route   POST /api/auth/register
+// @desc    Register a new user
+// @access  Public
+router.post('/register', validateRegistration, async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName, department } = req.body;
+    const { username, email, password, firstName, lastName, department, role } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({
-      $or: [{ email }, { username }];
+      $or: [{ email }, { username }]
     });
 
     if (existingUser) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
-        message: 'User with this email or username already exists';
+        message: 'User already exists with this email or username',
+        code: 'USER_EXISTS'
       });
     }
 
     // Create new user
-    const user = new User({
+    const newUser = new User({
       username,
       email,
       password,
       firstName,
       lastName,
-      department;
+      department,
+      role: role || 'user'
     });
 
-    await user.save();
+    // Save user to database
+    await newUser.save();
 
-    // Generate JWT token
-    const token = jwt.sign(;
-      { id: user._id },
-      process.env.JWT_SECRET || 'fallback_secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
+    // Generate tokens
+    const tokens = JWTUtils.generateTokenPair(newUser);
+
+    // Update last login
+    newUser.lastLogin = new Date();
+    await newUser.save();
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      token,
-      user: user.getProfile();
+      data: {
+        user: newUser.getProfile(),
+        tokens: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresIn: tokens.expiresIn
+        }
+      }
     });
+
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error registering user',
-      error: error.message;
+      message: 'Registration failed',
+      code: 'REGISTRATION_ERROR',
+      details: error.message
     });
   }
 });
 
-// Login user
-router.post('/login', async (req, res) => {
+// @route   POST /api/auth/login
+// @desc    Login user and return tokens
+// @access  Public
+router.post('/login', validateLogin, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { identifier, password } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ email });
+    // Find user by email or username
+    const user = await User.findByEmailOrUsername(identifier);
+
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password';
+        message: 'Invalid credentials',
+        code: 'INVALID_CREDENTIALS'
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Account is deactivated',
+        code: 'ACCOUNT_DEACTIVATED'
       });
     }
 
     // Check password
-    const isPasswordValid = await user.comparePassword(password);
+    const isPasswordValid = await user.isValidPassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password';
+        message: 'Invalid credentials',
+        code: 'INVALID_CREDENTIALS'
       });
     }
 
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated';
-      });
-    }
+    // Generate tokens
+    const tokens = JWTUtils.generateTokenPair(user);
 
-    // Generate JWT token
-    const token = jwt.sign(;
-      { id: user._id },
-      process.env.JWT_SECRET || 'fallback_secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
 
     res.json({
       success: true,
       message: 'Login successful',
-      token,
-      user: user.getProfile();
+      data: {
+        user: user.getProfile(),
+        tokens: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresIn: tokens.expiresIn
+        }
+      }
     });
+
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error during login',
-      error: error.message;
+      message: 'Login failed',
+      code: 'LOGIN_ERROR',
+      details: error.message
     });
   }
 });
 
-// Get current user profile
-router.get('/me', authenticateToken, async (req, res) => {
+// @route   POST /api/auth/refresh
+// @desc    Refresh access token
+// @access  Public
+router.post('/refresh', async (req, res) => {
   try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Refresh token is required',
+        code: 'REFRESH_TOKEN_REQUIRED'
+      });
+    }
+
+    const newAccessToken = JWTUtils.refreshAccessToken(refreshToken);
+
     res.json({
       success: true,
-      user: req.user.getProfile();
+      message: 'Token refreshed successfully',
+      data: {
+        accessToken: newAccessToken
+      }
     });
+
   } catch (error) {
-    console.error('Profile fetch error:', error);
-    res.status(500).json({
+    console.error('Token refresh error:', error);
+    res.status(401).json({
       success: false,
-      message: 'Error fetching user profile',
-      error: error.message;
+      message: 'Token refresh failed',
+      code: 'REFRESH_FAILED',
+      details: error.message
     });
   }
 });
 
-// Update user profile
-router.put('/profile', authenticateToken, async (req, res) => {
+// @route   POST /api/auth/logout
+// @desc    Logout user (client should discard tokens)
+// @access  Private
+router.post('/logout', authMiddleware.authenticateToken, async (req, res) => {
+  try {
+    // In a real implementation, you might want to blacklist the token
+    // For now, we'll just return success and let the client discard tokens
+    
+    res.json({
+      success: true,
+      message: 'Logout successful'
+    });
+
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Logout failed',
+      code: 'LOGOUT_ERROR',
+      details: error.message
+    });
+  }
+});
+
+// @route   GET /api/auth/me
+// @desc    Get current user profile
+// @access  Private
+router.get('/me', authMiddleware.authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user: user.getProfile()
+      }
+    });
+
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get user profile',
+      code: 'PROFILE_ERROR',
+      details: error.message
+    });
+  }
+});
+
+// @route   PUT /api/auth/profile
+// @desc    Update user profile
+// @access  Private
+router.put('/profile', authMiddleware.authenticateToken, async (req, res) => {
   try {
     const { firstName, lastName, department } = req.body;
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
     
-    const user = await User.findByIdAndUpdate(;
-      req.user.id,
-      { 
-        firstName, 
-        lastName, 
-        department,
-        profileCompleted: true ;
-      },
-      { new: true }
-    ).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+
+    // Update allowed fields
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (department) user.department = department;
+
+    await user.save();
 
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      user: user.getProfile();
+      data: {
+        user: user.getProfile()
+      }
     });
+
   } catch (error) {
     console.error('Profile update error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error updating profile',
-      error: error.message;
+      message: 'Profile update failed',
+      code: 'PROFILE_UPDATE_ERROR',
+      details: error.message
+    });
+  }
+});
+
+// @route   POST /api/auth/change-password
+// @desc    Change user password
+// @access  Private
+router.post('/change-password', authMiddleware.authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required',
+        code: 'MISSING_PASSWORDS'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long',
+        code: 'PASSWORD_TOO_SHORT'
+      });
+    }
+
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await user.isValidPassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect',
+        code: 'INVALID_CURRENT_PASSWORD'
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('Password change error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Password change failed',
+      code: 'PASSWORD_CHANGE_ERROR',
+      details: error.message
     });
   }
 });
