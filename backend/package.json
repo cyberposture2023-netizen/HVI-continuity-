@@ -1,37 +1,42 @@
 {
-  "name": "hvi-continuity-backend",
+  "description": "HVI Continuity Platform - Live Demo Backend",
+  "name": "hvi-continuity-platform",
   "version": "1.0.0",
-  "description": "HVI Continuity Platform Backend",
+  "license": "MIT",
+  "author": "HVI Development Team",
   "main": "server.js",
   "scripts": {
+    "pm2-start": "pm2 start ecosystem.config.js",
+    "test": "powershell -ExecutionPolicy Bypass -File test-endpoints.ps1",
+    "pm2-restart": "pm2 restart hvi-continuity-backend",
+    "test-api": "node -e \"require('./server.js\")\"",
+    "demo": "powershell -ExecutionPolicy Bypass -File launch-demo.ps1",
     "start": "node server.js",
+    "pm2-monitor": "pm2 monit",
+    "pm2-logs": "pm2 logs hvi-continuity-backend",
     "dev": "nodemon server.js",
-    "test": "jest --verbose --testPathPattern=\"verification.test.js|server.test.js\" --testTimeout=10000",
-    "test:all": "jest --verbose --testTimeout=15000 --forceExit --detectOpenHandles",
-    "test:watch": "jest --watch --testTimeout=10000"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "mongoose": "^7.0.0",
-    "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.3"
+    "pm2-stop": "pm2 stop hvi-continuity-backend"
   },
   "devDependencies": {
-    "jest": "^29.5.0",
-    "supertest": "^6.3.3",
-    "nodemon": "^2.0.22"
+    "pm2": "^5.3.0",
+    "nodemon": "^3.0.1"
   },
-  "jest": {
-    "testEnvironment": "node",
-    "testTimeout": 10000,
-    "collectCoverageFrom": [
-      "routes/**/*.js",
-      "models/**/*.js",
-      "middleware/**/*.js"
-    ],
-    "coverageDirectory": "coverage"
-  }
+  "dependencies": {
+    "compression": "^1.7.4",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "morgan": "^1.10.0",
+    "bcryptjs": "^2.4.3",
+    "helmet": "^7.1.0",
+    "mongodb": "^5.7.0",
+    "jsonwebtoken": "^9.0.2",
+    "dotenv": "^16.3.1"
+  },
+  "keywords": [
+    "hvi",
+    "continuity",
+    "api",
+    "backend",
+    "demo"
+  ]
 }
-

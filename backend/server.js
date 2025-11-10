@@ -1,130 +1,193 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
+const helmet = require('helmet');
+const compression = require('compression');
+const morgan = require('morgan');
 require('dotenv').config();
 
 const app = express();
+const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(helmet());
+app.use(compression());
+app.use(morgan('combined'));
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true
+}));
 app.use(express.json());
 
-// MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/hvi_continuity';
-mongoose.connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB connected successfully'))
-.catch(err => console.log('❌ MongoDB connection error:', err));
+// Demo data
+const demoData = {
+    users: [
+        { id: 1, name: 'John Doe', email: 'john@hvi.demo', role: 'admin', status: 'active' },
+        { id: 2, name: 'Jane Smith', email: 'jane@hvi.demo', role: 'user', status: 'active' },
+        { id: 3, name: 'Mike Johnson', email: 'mike@hvi.demo', role: 'assessor', status: 'active' }
+    ],
+    assessments: [
+        { id: 1, title: 'Security Baseline Assessment', status: 'completed', score: 85, date: '2024-01-15' },
+        { id: 2, title: 'Compliance Audit Q1', status: 'in-progress', score: null, date: '2024-01-20' },
+        { id: 3, title: 'Risk Evaluation Framework', status: 'pending', score: null, date: '2024-01-25' }
+    ],
+    questions: [
+        { id: 1, category: 'Security', text: 'Is multi-factor authentication enabled for all admin accounts?', type: 'boolean' },
+        { id: 2, category: 'Compliance', text: 'Are regular security awareness trainings conducted?', type: 'boolean' },
+        { id: 3, category: 'Operations', text: 'Describe your incident response procedure:', type: 'text' },
+        { id: 4, category: 'Infrastructure', text: 'How often are system backups performed?', type: 'multiple-choice', options: ['Daily', 'Weekly', 'Monthly', 'Never'] }
+    ],
+    dashboard: {
+        totalAssessments: 12,
+        completedAssessments: 8,
+        averageScore: 78,
+        activeUsers: 45,
+        highRiskItems: 3,
+        upcomingDeadlines: 2
+    }
+};
 
-// SIMPLE HEALTH CHECK - GUARANTEED TO WORK
+// 1. Health Check Endpoint
 app.get('/api/health', (req, res) => {
-    console.log('HEALTH CHECK: Received request');
-    res.json({
-        status: 'healthy',
-        server: 'HVI Continuity Platform',
-        timestamp: new Date().toLocaleString(),
+    res.status(200).json({
+        status: 'operational',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        version: '1.0.0',
+        endpoints: [
+            'GET /api/health',
+            'POST /api/auth/login',
+            'GET /api/assessments',
+            'GET /api/questions',
+            'GET /api/dashboard',
+            'GET /api/users'
+        ],
         environment: process.env.NODE_ENV || 'development'
     });
 });
 
-// SIMPLE TEST ENDPOINTS - GUARANTEED TO WORK
-app.get('/api/auth/test', (req, res) => {
-    console.log('AUTH TEST: Received request');
-    res.json({ 
-        message: 'Auth route working perfectly', 
-        timestamp: new Date().toLocaleString(),
-        status: 'success'
+// 2. Authentication Demo Endpoint
+app.post('/api/auth/login', (req, res) => {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+        return res.status(400).json({
+            success: false,
+            message: 'Username and password are required'
+        });
+    }
+
+    // Demo authentication logic
+    if (username === 'demo' && password === 'demo') {
+        res.json({
+            success: true,
+            message: 'Authentication successful',
+            user: {
+                id: 1,
+                username: 'demo-user',
+                name: 'Demo User',
+                role: 'admin',
+                token: 'demo-jwt-token-' + Date.now()
+            }
+        });
+    } else {
+        res.status(401).json({
+            success: false,
+            message: 'Invalid credentials'
+        });
+    }
+});
+
+// 3. Assessments Management Endpoint
+app.get('/api/assessments', (req, res) => {
+    res.json({
+        success: true,
+        data: demoData.assessments,
+        pagination: {
+            total: demoData.assessments.length,
+            page: 1,
+            limit: 10
+        }
     });
 });
 
-app.get('/api/assessments/test', (req, res) => {
-    console.log('ASSESSMENTS TEST: Received request');
-    res.json({ 
-        message: 'Assessments route working perfectly', 
-        timestamp: new Date().toLocaleString(),
-        status: 'success'
+// 4. Questions Bank Endpoint
+app.get('/api/questions', (req, res) => {
+    const { category } = req.query;
+    
+    let questions = demoData.questions;
+    if (category) {
+        questions = questions.filter(q => q.category.toLowerCase() === category.toLowerCase());
+    }
+
+    res.json({
+        success: true,
+        data: questions,
+        categories: ['Security', 'Compliance', 'Operations', 'Infrastructure']
     });
 });
 
-app.get('/api/questions/test', (req, res) => {
-    console.log('QUESTIONS TEST: Received request');
-    res.json({ 
-        message: 'Questions route working perfectly', 
-        timestamp: new Date().toLocaleString(),
-        status: 'success'
+// 5. Dashboard Analytics Endpoint
+app.get('/api/dashboard', (req, res) => {
+    res.json({
+        success: true,
+        data: demoData.dashboard,
+        lastUpdated: new Date().toISOString(),
+        trends: {
+            scoreImprovement: 5,
+            assessmentCompletion: 12,
+            userGrowth: 8
+        }
     });
 });
 
-app.get('/api/dashboard/test', (req, res) => {
-    console.log('DASHBOARD TEST: Received request');
-    res.json({ 
-        message: 'Dashboard route working perfectly', 
-        timestamp: new Date().toLocaleString(),
-        status: 'success'
+// 6. User Management Endpoint
+app.get('/api/users', (req, res) => {
+    res.json({
+        success: true,
+        data: demoData.users,
+        total: demoData.users.length,
+        roles: ['admin', 'user', 'assessor']
     });
 });
 
-app.get('/api/users/test', (req, res) => {
-    console.log('USERS TEST: Received request');
-    res.json({ 
-        message: 'Users route working perfectly', 
-        timestamp: new Date().toLocaleString(),
-        status: 'success'
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
     });
 });
 
-// Import route files if they exist, but don't break if they don't
-console.log('Loading routes...');
-try {
-    const authRoutes = require('./routes/auth');
-    app.use('/api/auth', authRoutes);
-    console.log('✅ Auth routes loaded');
-} catch (e) { console.log('⚠️ Auth routes skipped:', e.message); }
-
-try {
-    const assessmentRoutes = require('./routes/assessments');
-    app.use('/api/assessments', assessmentRoutes);
-    console.log('✅ Assessment routes loaded');
-} catch (e) { console.log('⚠️ Assessment routes skipped:', e.message); }
-
-try {
-    const questionRoutes = require('./routes/questions');
-    app.use('/api/questions', questionRoutes);
-    console.log('✅ Question routes loaded');
-} catch (e) { console.log('⚠️ Question routes skipped:', e.message); }
-
-try {
-    const dashboardRoutes = require('./routes/dashboard');
-    app.use('/api/dashboard', dashboardRoutes);
-    console.log('✅ Dashboard routes loaded');
-} catch (e) { console.log('⚠️ Dashboard routes skipped:', e.message); }
-
-try {
-    const userRoutes = require('./routes/users');
-    app.use('/api/users', userRoutes);
-    console.log('✅ User routes loaded');
-} catch (e) { console.log('⚠️ User routes skipped:', e.message); }
-
-// Serve frontend in production
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../frontend/build')));
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+// 404 handler
+app.use('*', (req, res) => {
+    res.status(404).json({
+        success: false,
+        message: 'Endpoint not found',
+        availableEndpoints: [
+            '/api/health',
+            '/api/auth/login',
+            '/api/assessments',
+            '/api/questions',
+            '/api/dashboard',
+            '/api/users'
+        ]
     });
-}
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log('🚀 Server running on http://localhost:' + PORT);
-    console.log('📊 Environment: ' + (process.env.NODE_ENV || 'development'));
-    console.log('✅ TEST ENDPOINTS READY:');
-    console.log('   http://localhost:' + PORT + '/api/health');
-    console.log('   http://localhost:' + PORT + '/api/auth/test');
-    console.log('   http://localhost:' + PORT + '/api/assessments/test');
-    console.log('   http://localhost:' + PORT + '/api/questions/test');
-    console.log('   http://localhost:' + PORT + '/api/dashboard/test');
-    console.log('   http://localhost:' + PORT + '/api/users/test');
 });
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`🚀 HVI Continuity Platform Backend running on port ${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`🔗 Available endpoints:`);
+    console.log(`   GET  /api/health`);
+    console.log(`   POST /api/auth/login`);
+    console.log(`   GET  /api/assessments`);
+    console.log(`   GET  /api/questions`);
+    console.log(`   GET  /api/dashboard`);
+    console.log(`   GET  /api/users`);
+    console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+});
+
+module.exports = app;
