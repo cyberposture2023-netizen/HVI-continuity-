@@ -1,6 +1,7 @@
 // Simple Backend Verification Test
 const express = require('express');
 const mongoose = require('mongoose');
+const fs = require('fs');
 
 async function simpleVerification() {
     console.log('Simple Backend Verification');
@@ -31,12 +32,11 @@ async function simpleVerification() {
     }
     
     // Test 4: Route files existence and basic structure
-    const fs = require('fs');
     const routeFiles = ['auth', 'assessments', 'questions', 'dashboard', 'users'];
     console.log('4. Route files check:');
     
     for (const route of routeFiles) {
-        const filePath = ./routes/ + route + '.js';
+        const filePath = './routes/' + route + '.js';
         if (fs.existsSync(filePath)) {
             console.log('   ✅ ' + route + '.js');
         } else {
