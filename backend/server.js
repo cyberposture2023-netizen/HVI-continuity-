@@ -41,38 +41,41 @@ mongoose.connect(MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })
-.then(() => console.log('✅ MongoDB connected successfully to: ' + MONGODB_URI))
+.then(() => console.log('MongoDB connected successfully to: ' + MONGODB_URI))
 .catch(err => {
-    console.error('❌ MongoDB connection error:', err);
-    console.log('💡 Make sure MongoDB is running on localhost:27017');
+    console.error('MongoDB connection error:', err);
+    console.log('Make sure MongoDB is running on localhost:27017');
 });
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log('\n🚀 HVI Continuity Platform Server Started');
+    console.log('');
+    console.log('HVI Continuity Platform Server Started');
     console.log('=========================================');
-    console.log('✅ Server is running on port: ' + PORT);
-    console.log('✅ Environment: ' + (process.env.NODE_ENV || 'development'));
-    console.log('✅ API Base URL: http://localhost:' + PORT + '/api');
-    console.log('✅ Health Check: http://localhost:' + PORT + '/api/health');
-    console.log('\n📊 Available API Endpoints:');
-    console.log('   • POST   /api/auth/register     - User registration');
-    console.log('   • POST   /api/auth/login        - User login');
-    console.log('   • POST   /api/auth/refresh      - Refresh token');
-    console.log('   • GET    /api/auth/profile      - Get user profile');
-    console.log('   • PUT    /api/auth/profile      - Update profile');
-    console.log('   • GET    /api/assessments       - Get user assessments');
-    console.log('   • POST   /api/assessments       - Create assessment');
-    console.log('   • GET    /api/assessments/:id   - Get assessment by ID');
-    console.log('   • PUT    /api/assessments/:id   - Update assessment');
-    console.log('   • DELETE /api/assessments/:id   - Delete assessment');
-    console.log('   • GET    /api/questions         - Get questions');
-    console.log('   • POST   /api/questions/:id/answer - Submit answer');
-    console.log('   • GET    /api/dashboard         - User dashboard');
-    console.log('   • GET    /api/dashboard/admin   - Admin dashboard');
-    console.log('   • GET    /api/users/profile     - User profile');
-    console.log('   • PUT    /api/users/profile     - Update profile');
-    console.log('   • GET    /api/users/assessments - User assessments');
-    console.log('=========================================\n');
+    console.log('Server is running on port: ' + PORT);
+    console.log('Environment: ' + (process.env.NODE_ENV || 'development'));
+    console.log('API Base URL: http://localhost:' + PORT + '/api');
+    console.log('Health Check: http://localhost:' + PORT + '/api/health');
+    console.log('');
+    console.log('Available API Endpoints:');
+    console.log('  POST   /api/auth/register     - User registration');
+    console.log('  POST   /api/auth/login        - User login');
+    console.log('  POST   /api/auth/refresh      - Refresh token');
+    console.log('  GET    /api/auth/profile      - Get user profile');
+    console.log('  PUT    /api/auth/profile      - Update profile');
+    console.log('  GET    /api/assessments       - Get user assessments');
+    console.log('  POST   /api/assessments       - Create assessment');
+    console.log('  GET    /api/assessments/:id   - Get assessment by ID');
+    console.log('  PUT    /api/assessments/:id   - Update assessment');
+    console.log('  DELETE /api/assessments/:id   - Delete assessment');
+    console.log('  GET    /api/questions         - Get questions');
+    console.log('  POST   /api/questions/:id/answer - Submit answer');
+    console.log('  GET    /api/dashboard         - User dashboard');
+    console.log('  GET    /api/dashboard/admin   - Admin dashboard');
+    console.log('  GET    /api/users/profile     - User profile');
+    console.log('  PUT    /api/users/profile     - Update profile');
+    console.log('  GET    /api/users/assessments - User assessments');
+    console.log('=========================================');
+    console.log('');
 });
