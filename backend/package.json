@@ -41,6 +41,7 @@
     "test:endpoints": "node test-all-endpoints.js",
     "validate:syntax": "node syntax-validator.js",
     "clean:files": "node file-cleaner.js",
-    "report:stability": "node stability-report.js"
+    "report:stability": "node stability-report.js",
+    "server:emergency": "node server-minimal-guaranteed.js"
   }
 }

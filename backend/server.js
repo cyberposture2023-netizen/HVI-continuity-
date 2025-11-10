@@ -1,94 +1,138 @@
-// HVI-Continuity Platform - Backend Server
-// Guaranteed working version
+// HVI-Continuity Platform - Clean Main Server
+// Fixed version without syntax errors
 
-console.log(' Starting HVI-Continuity Backend Server...');
+console.log("🚀 Starting HVI-Continuity Platform Server...");
 
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const path = require('path');
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const path = require("path");
 
 const app = express();
 
-// Basic middleware - NO complex dependencies
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Health endpoints (always work)
-app.get('/api/health', (req, res) => {
+// Basic health endpoints
+app.get("/api/health", (req, res) => {
     res.json({ 
-        status: 'healthy', 
+        status: "healthy", 
         timestamp: new Date().toISOString(),
-        message: 'Backend server is running';
+        message: "Main server is running"
     });
 });
 
-app.get('/api/health-enhanced', (req, res) => {
+app.get("/api/health-enhanced", (req, res) => {
     res.json({
-        status: 'healthy',
+        status: "healthy",
         timestamp: new Date().toISOString(),
-        port: 5000,
-        database: 'checking...',
-        endpoints: ['/api/health', '/api/health-enhanced'],
+        port: process.env.PORT || 5000,
+        database: "checking",
+        endpoints: [
+            "/api/health",
+            "/api/health-enhanced",
+            "/api/assessments", 
+            "/api/questions",
+            "/api/dashboard/scores",
+            "/api/users"
+        ],
         memory: process.memoryUsage(),
-        uptime: process.uptime();
+        uptime: process.uptime()
     });
 });
 
 // Try to load routes with error handling
 try {
-    const assessmentRoutes = require('./routes/assessments');
-    app.use('/api/assessments', assessmentRoutes);
-    console.log(' Assessments routes loaded');
-} catch (e) {
-    console.log(' Assessments routes not available:', e.message);
-    app.use('/api/assessments', (req, res) => res.json({ error: 'Assessments module loading' }));
+    const assessmentRoutes = require("./routes/assessments");
+    app.use("/api/assessments", assessmentRoutes);
+    console.log("✅ Assessments routes loaded");
+} catch (error) {
+    console.log("❌ Assessments routes failed:", error.message);
+    app.use("/api/assessments", (req, res) => {
+        res.json({ error: "Assessments module not available", message: error.message });
+    });
 }
 
 try {
-    const questionRoutes = require('./routes/questions');
-    app.use('/api/questions', questionRoutes);
-    console.log(' Questions routes loaded');
-} catch (e) {
-    console.log(' Questions routes not available:', e.message);
-    app.use('/api/questions', (req, res) => res.json({ error: 'Questions module loading' }));
+    const questionRoutes = require("./routes/questions");
+    app.use("/api/questions", questionRoutes);
+    console.log("✅ Questions routes loaded");
+} catch (error) {
+    console.log("❌ Questions routes failed:", error.message);
+    app.use("/api/questions", (req, res) => {
+        res.json({ error: "Questions module not available", message: error.message });
+    });
 }
 
 try {
-    const dashboardRoutes = require('./routes/dashboard');
-    app.use('/api/dashboard', dashboardRoutes);
-    console.log(' Dashboard routes loaded');
-} catch (e) {
-    console.log(' Dashboard routes not available:', e.message);
-    app.use('/api/dashboard', (req, res) => res.json({ error: 'Dashboard module loading' }));
+    const dashboardRoutes = require("./routes/dashboard");
+    app.use("/api/dashboard", dashboardRoutes);
+    console.log("✅ Dashboard routes loaded");
+} catch (error) {
+    console.log("❌ Dashboard routes failed:", error.message);
+    app.use("/api/dashboard", (req, res) => {
+        res.json({ error: "Dashboard module not available", message: error.message });
+    });
+}
+
+try {
+    const userRoutes = require("./routes/users");
+    app.use("/api/users", userRoutes);
+    console.log("✅ Users routes loaded");
+} catch (error) {
+    console.log("❌ Users routes failed:", error.message);
+    app.use("/api/users", (req, res) => {
+        res.json({ error: "Users module not available", message: error.message });
+    });
+}
+
+try {
+    const authRoutes = require("./routes/auth");
+    app.use("/api/auth", authRoutes);
+    console.log("✅ Auth routes loaded");
+} catch (error) {
+    console.log("❌ Auth routes failed:", error.message);
+    app.use("/api/auth", (req, res) => {
+        res.json({ error: "Auth module not available", message: error.message });
+    });
 }
 
 // MongoDB connection with timeout
 setTimeout(() => {
-    mongoose.connect('mongodb://localhost:27017/hvi-continuity', {
+    mongoose.connect("mongodb://localhost:27017/hvi-continuity", {
         useNewUrlParser: true,
         useUnifiedTopology: true,
     })
-    .then(() => console.log(' MongoDB connected'))
-    .catch(err => console.log(' MongoDB connection failed:', err.message));
+    .then(() => console.log("✅ MongoDB connected"))
+    .catch(err => console.log("❌ MongoDB connection failed:", err.message));
 }, 1000);
+
+// 404 handler
+app.use("*", (req, res) => {
+    res.status(404).json({ 
+        error: "Endpoint not found",
+        path: req.originalUrl
+    });
+});
+
+// Error handler
+app.use((error, req, res, next) => {
+    console.error("Server error:", error);
+    res.status(500).json({ 
+        error: "Internal server error",
+        message: error.message
+    });
+});
 
 // Start server
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(' SERVER SUCCESSFULLY STARTED ON PORT ' + PORT);
-    console.log(' Health Check: http://localhost:' + PORT + '/api/health');
-    console.log(' Enhanced Health: http://localhost:' + PORT + '/api/health-enhanced');
-    console.log(' Backend is ready for frontend connections!');
+    console.log("✅ Server running on port " + PORT);
+    console.log("📍 API available at: http://localhost:" + PORT + "/api");
+    console.log("🔧 Health check: http://localhost:" + PORT + "/api/health");
+    console.log("🎉 HVI-Continuity Platform backend is ready!");
 });
 
-// Global error handler
-process.on('uncaughtException', (error) => {
-    console.log(' UNCAUGHT EXCEPTION:', error.message);
-    console.log('Server continues running...');
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.log(' UNHANDLED REJECTION at:', promise, 'reason:', reason);
-});
+module.exports = app;
