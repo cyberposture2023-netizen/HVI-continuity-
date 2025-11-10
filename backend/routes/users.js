@@ -1,69 +1,78 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const auth = require('../middleware/auth');
+
+// Get all users
+router.get('/', async (req, res) => {
+    try {
+        const users = await User.find().select('-password');
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Get user by ID
+router.get('/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('-password');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
 // Get user profile
-router.get('/profile', auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+router.get('/profile/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id)
+            .select('-password')
+            .populate('currentAssessment')
+            .populate('assessmentHistory');
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-    res.json(user);
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    res.status(500).json({ message: 'Server error fetching profile' });
-  }
 });
 
-// Update user profile
-router.put('/profile', auth, async (req, res) => {
-  try {
-    const { username, department } = req.body;
-    
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+// Update user
+router.put('/:id', async (req, res) => {
+    try {
+        const user = await User.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true, runValidators: true }
+        ).select('-password');
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        res.json(user);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
-
-    if (username) user.username = username;
-    if (department) user.department = department;
-
-    await user.save();
-    
-    // Return user without password
-    const userResponse = await User.findById(req.user.id).select('-password');
-    res.json(userResponse);
-  } catch (error) {
-    console.error('Error updating user profile:', error);
-    res.status(500).json({ message: 'Server error updating profile' });
-  }
 });
 
-// Get user scores (alias for dashboard/scores)
-router.get('/scores', auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+// Delete user
+router.delete('/:id', async (req, res) => {
+    try {
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-
-    res.json({
-      overallHVI: user.overallHVI || 0,
-      dimensionScores: {
-        D1: user.d1Score || 0,
-        D2: user.d2Score || 0,
-        D3: user.d3Score || 0,
-        D4: user.d4Score || 0
-      },
-      lastAssessmentDate: user.lastAssessmentDate
-    });
-  } catch (error) {
-    console.error('Error fetching user scores:', error);
-    res.status(500).json({ message: 'Server error fetching scores' });
-  }
 });
 
 module.exports = router;

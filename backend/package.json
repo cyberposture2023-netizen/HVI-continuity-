@@ -37,6 +37,7 @@
     "status": "node quick-status.js",
     "readiness": "node readiness-verify.js",
     "server:repair": "node server-repair.js",
-    "start:verify": "node verify-startup.js"
+    "start:verify": "node verify-startup.js",
+    "test:endpoints": "node test-all-endpoints.js"
   }
 }
