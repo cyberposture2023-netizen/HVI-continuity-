@@ -1,51 +1,36 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import DashboardLayout from './components/Dashboard/DashboardLayout';
-import AssessmentPage from './pages/AssessmentPage';
-import './App.css';
+import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './components/Login';
+import Register from './components/Register';
+import Dashboard from './components/Dashboard';
 import UserAssessments from './components/UserAssessments';
+import './App.css';
+
+const AppContent = () => {
+    const { user, isAuthenticated } = useAuth();
+    const [authMode, setAuthMode] = useState('login');
+
+    if (isAuthenticated && user) {
+        return <Dashboard />;
+    }
+
+    return (
+        <div className="App">
+            {authMode === 'login' ? (
+                <Login onToggleMode={() => setAuthMode('register')} />
+            ) : (
+                <Register onToggleMode={() => setAuthMode('login')} />
+            )}
+        </div>
+    );
+};
 
 function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <div className="App">
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />
-            <Route path="/assessments" element={<ProtectedRoute><UserAssessments /></ProtectedRoute>} />} />
-            
-            {/* Protected routes */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/assessment" 
-              element={
-                <ProtectedRoute>
-                  <AssessmentPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </div>
-      </Router>
-    </AuthProvider>
-  );
+    return (
+        <AuthProvider>
+            <AppContent />
+        </AuthProvider>
+    );
 }
 
 export default App;
-
