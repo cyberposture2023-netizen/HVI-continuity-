@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 
 async function testUserAssessmentIntegration() {
     try {
-        console.log('🧪 Testing User-Assessment Integration...');
+        console.log('Testing User-Assessment Integration...');
         
         // Connect to database
         await mongoose.connect('mongodb://localhost:27017/hvi-continuity', {
@@ -13,7 +13,7 @@ async function testUserAssessmentIntegration() {
             useUnifiedTopology: true
         });
         
-        console.log('✅ Connected to database');
+        console.log('Connected to database');
         
         // Check if test user exists
         let testUser = await User.findOne({ email: 'test@hvi-continuity.com' });
@@ -31,9 +31,9 @@ async function testUserAssessmentIntegration() {
                 role: 'user'
             });
             await testUser.save();
-            console.log('✅ Created test user');
+            console.log('Created test user');
         } else {
-            console.log('✅ Test user already exists');
+            console.log('Test user already exists');
         }
         
         // Check if test assessment exists for this user
@@ -95,16 +95,16 @@ async function testUserAssessmentIntegration() {
             
             // Add assessment to user's assessments array
             await User.findByIdAndUpdate(testUser._id, {
-                \$push: { assessments: testAssessment._id }
+                $push: { assessments: testAssessment._id }
             });
             
-            console.log('✅ Created test assessment with scores:', testAssessment.scores);
+            console.log('Created test assessment with scores:', testAssessment.scores);
         } else {
-            console.log('✅ Test assessment already exists');
+            console.log('Test assessment already exists');
             // Recalculate scores to ensure they're current
             testAssessment.calculateScores();
             await testAssessment.save();
-            console.log('✅ Updated assessment scores:', testAssessment.scores);
+            console.log('Updated assessment scores:', testAssessment.scores);
         }
         
         // Test query: Get user with their assessments
@@ -112,7 +112,7 @@ async function testUserAssessmentIntegration() {
             .populate('assessments')
             .select('-password');
             
-        console.log('✅ User with assessments:', {
+        console.log('User with assessments:', {
             username: userWithAssessments.username,
             assessmentCount: userWithAssessments.assessments.length,
             assessments: userWithAssessments.assessments.map(a => ({
@@ -126,7 +126,7 @@ async function testUserAssessmentIntegration() {
         const userAssessments = await Assessment.find({ user: testUser._id })
             .sort({ createdAt: -1 });
             
-        console.log('✅ User assessments query successful. Count:', userAssessments.length);
+        console.log('User assessments query successful. Count:', userAssessments.length);
         
         // Test dashboard data aggregation
         const completedAssessments = await Assessment.countDocuments({ 
@@ -136,14 +136,14 @@ async function testUserAssessmentIntegration() {
         
         const totalAssessments = await Assessment.countDocuments({ user: testUser._id });
         
-        console.log('✅ Dashboard statistics:', {
+        console.log('Dashboard statistics:', {
             totalAssessments,
             completedAssessments,
             completionRate: totalAssessments > 0 ? Math.round((completedAssessments / totalAssessments) * 100) + '%' : '0%'
         });
         
-        console.log('🎉 All integration tests passed!');
-        console.log('📊 Test Assessment Scores:', testAssessment.scores);
+        console.log('All integration tests passed!');
+        console.log('Test Assessment Scores:', testAssessment.scores);
         
         return {
             success: true,
@@ -152,14 +152,14 @@ async function testUserAssessmentIntegration() {
         };
         
     } catch (error) {
-        console.error('❌ Integration test failed:', error);
+        console.error('Integration test failed:', error);
         return {
             success: false,
             error: error.message
         };
     } finally {
         await mongoose.connection.close();
-        console.log('🔌 Database connection closed');
+        console.log('Database connection closed');
     }
 }
 
