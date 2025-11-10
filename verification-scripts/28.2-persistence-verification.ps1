@@ -6,56 +6,54 @@ Write-Host "====================================" -ForegroundColor Cyan
 Write-Host "1. Testing Backend with Simple Health Check..." -ForegroundColor Yellow
 
 # Clean up first
-taskkill /F /IM node.exe 2>
+taskkill /F /IM node.exe 2>$null
 Start-Sleep -Seconds 2
 
 # Start backend directly
 Set-Location "backend"
-\System.Diagnostics.Process (Idle) = Start-Process -FilePath "node" -ArgumentList "server.js" -PassThru -WindowStyle Hidden
-Write-Host "Backend starting (PID: \)..." -ForegroundColor Gray
+$backendProcess = Start-Process -FilePath "node" -ArgumentList "server.js" -PassThru -WindowStyle Hidden
+Write-Host "Backend starting..." -ForegroundColor Gray
 Start-Sleep -Seconds 5
 
 # Test simple health endpoint
 try {
-    \ = Invoke-WebRequest -Uri "http://localhost:5000/api/health" -TimeoutSec 5
-    if (\.StatusCode -eq 200) {
-        \ = \.Content | ConvertFrom-Json
-        Write-Host "✓ BACKEND HEALTH CHECK PASSED!" -ForegroundColor Green
-        Write-Host "  Status: \" -ForegroundColor Gray
-        Write-Host "  Server: \" -ForegroundColor Gray
-        Write-Host "  Time: \" -ForegroundColor Gray
+    $response = Invoke-WebRequest -Uri "http://localhost:5000/api/health" -TimeoutSec 5
+    if ($response.StatusCode -eq 200) {
+        $healthData = $response.Content | ConvertFrom-Json
+        Write-Host "BACKEND HEALTH CHECK PASSED!" -ForegroundColor Green
+        Write-Host "  Status: $($healthData.status)" -ForegroundColor Gray
+        Write-Host "  Server: $($healthData.server)" -ForegroundColor Gray
+        Write-Host "  Time: $($healthData.timestamp)" -ForegroundColor Gray
     }
 } catch {
-    Write-Host "✗ Health check failed: \" -ForegroundColor Red
+    Write-Host "Health check failed: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 # Test additional endpoints
-Write-Host "
-2. Testing API Endpoints..." -ForegroundColor Yellow
-\ = @("auth", "assessments", "questions", "dashboard", "users")
+Write-Host "2. Testing API Endpoints..." -ForegroundColor Yellow
+$endpoints = @("auth", "assessments", "questions", "dashboard", "users")
 
-foreach (\ in \) {
+foreach ($endpoint in $endpoints) {
     try {
-        \ = Invoke-WebRequest -Uri "http://localhost:5000/api/\/test" -TimeoutSec 3
-        if (\.StatusCode -eq 200) {
-            \ = \.Content | ConvertFrom-Json
-            Write-Host "  ✓ /api/\/test - \" -ForegroundColor Green
+        $response = Invoke-WebRequest -Uri "http://localhost:5000/api/$endpoint/test" -TimeoutSec 3
+        if ($response.StatusCode -eq 200) {
+            $data = $response.Content | ConvertFrom-Json
+            Write-Host "  /api/$endpoint/test - $($data.message)" -ForegroundColor Green
         }
     } catch {
-        Write-Host "  ✗ /api/\/test - Failed" -ForegroundColor Red
+        Write-Host "  /api/$endpoint/test - Failed" -ForegroundColor Red
     }
 }
 
 # Stop backend
-if (\System.Diagnostics.Process (Idle) -and !\System.Diagnostics.Process (Idle).HasExited) {
-    Stop-Process -Id \System.Diagnostics.Process (Idle).Id -Force
+if ($backendProcess -and !$backendProcess.HasExited) {
+    Stop-Process -Id $backendProcess.Id -Force
     Write-Host "Backend process stopped" -ForegroundColor Yellow
 }
 
 # Verify persistence files
-Write-Host "
-3. Verifying Persistence Files..." -ForegroundColor Yellow
-\ = @(
+Write-Host "3. Verifying Persistence Files..." -ForegroundColor Yellow
+$persistenceFiles = @(
     "ecosystem.config.js",
     "deployment\windows-service-manager.bat", 
     "deployment\auto-start-platform.ps1",
@@ -64,16 +62,14 @@ Write-Host "
     "persistent-data\backups"
 )
 
-foreach (\ in \) {
-    if (Test-Path \) {
-        Write-Host "  ✓ \" -ForegroundColor Green
+foreach ($file in $persistenceFiles) {
+    if (Test-Path $file) {
+        Write-Host "  $file - EXISTS" -ForegroundColor Green
     } else {
-        Write-Host "  ✗ \" -ForegroundColor Red
+        Write-Host "  $file - MISSING" -ForegroundColor Red
     }
 }
 
 Set-Location ".."
-Write-Host "
-Persistence layer verification complete!" -ForegroundColor Green
-Write-Host "
-Next: Run 'deployment\auto-start-platform.ps1' to start the platform" -ForegroundColor Cyan
+Write-Host "Persistence layer verification complete!" -ForegroundColor Green
+Write-Host "Next: Run 'deployment\auto-start-platform.ps1' to start the platform" -ForegroundColor Cyan
