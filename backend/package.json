@@ -44,5 +44,11 @@
     "clean:files": "node file-cleaner.js",
     "report:stability": "node stability-report.js",
     "server:emergency": "node server-minimal-guaranteed.js"
+  },
+  "jest": {
+    "setupFilesAfterEnv": [
+      "./tests/setup.js"
+    ],
+    "testEnvironment": "node"
   }
 }
