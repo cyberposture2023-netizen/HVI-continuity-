@@ -7,6 +7,7 @@ import Register from './pages/Register';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import AssessmentPage from './pages/AssessmentPage';
 import './App.css';
+import UserAssessments from './components/UserAssessments';
 
 function App() {
   return (
@@ -16,7 +17,8 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/register" element={<Register />
+            <Route path="/assessments" element={<ProtectedRoute><UserAssessments /></ProtectedRoute>} />} />
             
             {/* Protected routes */}
             <Route 
@@ -46,3 +48,4 @@ function App() {
 }
 
 export default App;
+

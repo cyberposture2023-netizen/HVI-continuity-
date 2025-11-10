@@ -14,6 +14,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/assessments', require('./routes/assessments'));
+app.use('/api/questions', require('./routes/questions'));
+app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/users', require('./routes/users'));
+
 // Basic health endpoints
 app.get("/api/health", (req, res) => {
     res.json({ 
@@ -136,6 +143,7 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
 
 
 
