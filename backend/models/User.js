@@ -132,3 +132,4 @@ userSchema.statics.findByEmailOrUsername = function(identifier) {
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
+
