@@ -1,102 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import './Login.css';
 
-const Login = ({ onToggleMode }) => {
-    const [formData, setFormData] = useState({
-        email: '',
-        password: ''
-    });
-    const { login, loading, error, clearError } = useAuth();
+const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
-    useEffect(() => {
-        clearError();
-    }, []);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-        if (error) clearError();
-    };
+    try {
+      await login({ email, password });
+      // Navigation will be handled by AuthContext
+    } catch (err) {
+      setError(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            await login(formData);
-            // Redirect happens automatically via AuthContext
-        } catch (error) {
-            // Error is handled by AuthContext
-            console.error('Login failed:', error);
-        }
-    };
-
-    return (
-        <div className="login-container">
-            <div className="login-card">
-                <h2>Welcome Back</h2>
-                <p className="login-subtitle">Sign in to your HVI Continuity account</p>
-                
-                {error && (
-                    <div className="error-message">
-                        {error}
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="login-form">
-                    <div className="form-group">
-                        <label htmlFor="email">Email Address</label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            required
-                            disabled={loading}
-                            placeholder="Enter your email"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            required
-                            disabled={loading}
-                            placeholder="Enter your password"
-                        />
-                    </div>
-
-                    <button 
-                        type="submit" 
-                        className="login-button"
-                        disabled={loading}
-                    >
-                        {loading ? 'Signing In...' : 'Sign In'}
-                    </button>
-                </form>
-
-                <div className="auth-switch">
-                    <p>Don't have an account? 
-                        <button 
-                            type="button" 
-                            className="switch-button"
-                            onClick={onToggleMode}
-                            disabled={loading}
-                        >
-                            Sign Up
-                        </button>
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
+  return (
+    <div className="container">
+      <div className="card" style={{ maxWidth: '400px', margin: '100px auto' }}>
+        <h2>Login</h2>
+        {error && <div style={{ color: 'red', marginBottom: '15px' }}>{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Email:</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Password:</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button 
+            type="submit" 
+            className="btn btn-primary"
+            disabled={loading}
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 export default Login;

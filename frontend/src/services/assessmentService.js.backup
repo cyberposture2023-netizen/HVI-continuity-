@@ -1,0 +1,135 @@
+const API_BASE_URL = 'http://localhost:5000/api';
+
+class AssessmentService {
+    static async getAssessments() {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(\\/assessments\, {
+                method: 'GET',
+                headers: {
+                    'Authorization': \Bearer \\,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch assessments');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching assessments:', error);
+            throw error;
+        }
+    }
+
+    static async getAssessment(id) {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(\\/assessments/\\, {
+                method: 'GET',
+                headers: {
+                    'Authorization': \Bearer \\,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch assessment');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching assessment:', error);
+            throw error;
+        }
+    }
+
+    static async createAssessment(assessmentData) {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(\\/assessments\, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': \Bearer \\,
+                },
+                body: JSON.stringify(assessmentData),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to create assessment');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error creating assessment:', error);
+            throw error;
+        }
+    }
+
+    static async updateAssessment(id, assessmentData) {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(\\/assessments/\\, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': \Bearer \\,
+                },
+                body: JSON.stringify(assessmentData),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update assessment');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating assessment:', error);
+            throw error;
+        }
+    }
+
+    static async deleteAssessment(id) {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(\\/assessments/\\, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': \Bearer \\,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete assessment');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting assessment:', error);
+            throw error;
+        }
+    }
+
+    static async getDashboardData() {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(\\/dashboard\, {
+                method: 'GET',
+                headers: {
+                    'Authorization': \Bearer \\,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch dashboard data');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            throw error;
+        }
+    }
+}
+
+export default AssessmentService;

@@ -3,10 +3,10 @@ const router = express.Router();
 const Assessment = require('../models/Assessment');
 const auth = require('../middleware/auth');
 
-// Get all assessments for authenticated user
+// GET /api/assessments - Get all assessments for user
 router.get('/', auth, async (req, res) => {
     try {
-        const assessments = await Assessment.find({ user: req.user.id }).sort({ createdAt: -1 });
+        const assessments = await Assessment.find({ user: req.user.id });
         res.json(assessments);
     } catch (error) {
         console.error('Error fetching assessments:', error);
@@ -14,13 +14,13 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
-// Get specific assessment by ID
+// GET /api/assessments/:id - Get single assessment
 router.get('/:id', auth, async (req, res) => {
     try {
         const assessment = await Assessment.findOne({ 
             _id: req.params.id, 
             user: req.user.id 
-        });
+        }).populate('questions');
         
         if (!assessment) {
             return res.status(404).json({ message: 'Assessment not found' });
@@ -33,25 +33,17 @@ router.get('/:id', auth, async (req, res) => {
     }
 });
 
-// Create new assessment
+// POST /api/assessments - Create new assessment
 router.post('/', auth, async (req, res) => {
     try {
-        const { title, description, category, questions } = req.body;
+        const { title, description, categories, questions } = req.body;
         
         const newAssessment = new Assessment({
-            user: req.user.id,
             title,
             description,
-            category,
-            questions: questions || [],
-            status: 'draft',
-            scores: {
-                d1: 0,
-                d2: 0,
-                d3: 0,
-                d4: 0,
-                overall: 0
-            }
+            categories,
+            questions,
+            user: req.user.id
         });
         
         const savedAssessment = await newAssessment.save();
@@ -62,23 +54,14 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
-// Update assessment
+// PUT /api/assessments/:id - Update assessment
 router.put('/:id', auth, async (req, res) => {
     try {
-        const { title, description, questions, scores, status } = req.body;
+        const { title, description, categories, questions } = req.body;
         
         const updatedAssessment = await Assessment.findOneAndUpdate(
             { _id: req.params.id, user: req.user.id },
-            { 
-                $set: { 
-                    title, 
-                    description, 
-                    questions, 
-                    scores, 
-                    status,
-                    updatedAt: Date.now()
-                } 
-            },
+            { title, description, categories, questions },
             { new: true }
         );
         
@@ -93,12 +76,12 @@ router.put('/:id', auth, async (req, res) => {
     }
 });
 
-// Delete assessment
+// DELETE /api/assessments/:id - Delete assessment
 router.delete('/:id', auth, async (req, res) => {
     try {
-        const deletedAssessment = await Assessment.findOneAndDelete({ 
-            _id: req.params.id, 
-            user: req.user.id 
+        const deletedAssessment = await Assessment.findOneAndDelete({
+            _id: req.params.id,
+            user: req.user.id
         });
         
         if (!deletedAssessment) {
@@ -112,67 +95,9 @@ router.delete('/:id', auth, async (req, res) => {
     }
 });
 
-// Calculate assessment scores
-router.post('/:id/calculate-scores', auth, async (req, res) => {
-    try {
-        const assessment = await Assessment.findOne({ 
-            _id: req.params.id, 
-            user: req.user.id 
-        });
-        
-        if (!assessment) {
-            return res.status(404).json({ message: 'Assessment not found' });
-        }
-        
-        // Calculate scores based on questions
-        let d1Score = 0, d2Score = 0, d3Score = 0, d4Score = 0;
-        let d1Count = 0, d2Count = 0, d3Count = 0, d4Count = 0;
-        
-        assessment.questions.forEach(question => {
-            const score = question.userScore || 0;
-            switch (question.dimension) {
-                case 'D1':
-                    d1Score += score;
-                    d1Count++;
-                    break;
-                case 'D2':
-                    d2Score += score;
-                    d2Count++;
-                    break;
-                case 'D3':
-                    d3Score += score;
-                    d3Count++;
-                    break;
-                case 'D4':
-                    d4Score += score;
-                    d4Count++;
-                    break;
-            }
-        });
-        
-        // Calculate averages
-        const scores = {
-            d1: d1Count > 0 ? Math.round((d1Score / d1Count) * 100) / 100 : 0,
-            d2: d2Count > 0 ? Math.round((d2Score / d2Count) * 100) / 100 : 0,
-            d3: d3Count > 0 ? Math.round((d3Score / d3Count) * 100) / 100 : 0,
-            d4: d4Count > 0 ? Math.round((d4Score / d4Count) * 100) / 100 : 0
-        };
-        
-        scores.overall = Math.round(((scores.d1 + scores.d2 + scores.d3 + scores.d4) / 4) * 100) / 100;
-        
-        // Update assessment with calculated scores
-        assessment.scores = scores;
-        assessment.status = 'completed';
-        await assessment.save();
-        
-        res.json({
-            assessment,
-            scores
-        });
-    } catch (error) {
-        console.error('Error calculating scores:', error);
-        res.status(500).json({ message: 'Server error calculating scores' });
-    }
+// Test route for health checks
+router.get('/test/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Assessments route working' });
 });
 
 module.exports = router;

@@ -1,0 +1,68 @@
+const API_BASE_URL = 'http://localhost:5000/api';
+
+class DashboardService {
+    static async getDashboardData() {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(\\/dashboard\, {
+                method: 'GET',
+                headers: {
+                    'Authorization': \Bearer \\,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch dashboard data');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            throw error;
+        }
+    }
+
+    static async getUserProgress() {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(\\/dashboard/progress\, {
+                method: 'GET',
+                headers: {
+                    'Authorization': \Bearer \\,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch user progress');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching user progress:', error);
+            throw error;
+        }
+    }
+
+    static async getDepartmentStats() {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(\\/dashboard/department-stats\, {
+                method: 'GET',
+                headers: {
+                    'Authorization': \Bearer \\,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch department stats');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching department stats:', error);
+            throw error;
+        }
+    }
+}
+
+export default DashboardService;

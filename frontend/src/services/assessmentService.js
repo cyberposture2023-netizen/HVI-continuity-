@@ -1,125 +1,59 @@
-// Assessment Service
-const API_BASE_URL = 'http://localhost:5000/api';
+import api from './index';
 
-class AssessmentService {
-    static async createAssessment(assessmentData) {
-        const token = localStorage.getItem('authToken');
-        
+const assessmentService = {
+    getAllAssessments: async () => {
         try {
-            const response = await fetch(\\/assessments\, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': \Bearer \\
-                },
-                body: JSON.stringify(assessmentData),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to create assessment');
-            }
-
-            return await response.json();
+            const response = await api.get('/assessments');
+            return response.data;
         } catch (error) {
-            console.error('Create assessment error:', error);
-            throw error;
+            throw error.response?.data || { message: 'Failed to fetch assessments' };
+        }
+    },
+
+    getAssessment: async (id) => {
+        try {
+            const response = await api.get(`/assessments/${id}`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Failed to fetch assessment' };
+        }
+    },
+
+    createAssessment: async (assessmentData) => {
+        try {
+            const response = await api.post('/assessments', assessmentData);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Failed to create assessment' };
+        }
+    },
+
+    updateAssessment: async (id, assessmentData) => {
+        try {
+            const response = await api.put(`/assessments/${id}`, assessmentData);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Failed to update assessment' };
+        }
+    },
+
+    deleteAssessment: async (id) => {
+        try {
+            const response = await api.delete(`/assessments/${id}`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Failed to delete assessment' };
+        }
+    },
+
+    getAssessmentQuestions: async (assessmentId) => {
+        try {
+            const response = await api.get(`/questions/assessment/${assessmentId}`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Failed to fetch assessment questions' };
         }
     }
+};
 
-    static async getUserAssessments(userId) {
-        const token = localStorage.getItem('authToken');
-        
-        try {
-            const response = await fetch(\\/assessments/user/\\, {
-                method: 'GET',
-                headers: {
-                    'Authorization': \Bearer \\
-                },
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to fetch assessments');
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Get assessments error:', error);
-            throw error;
-        }
-    }
-
-    static async getAssessmentById(assessmentId) {
-        const token = localStorage.getItem('authToken');
-        
-        try {
-            const response = await fetch(\\/assessments/\\, {
-                method: 'GET',
-                headers: {
-                    'Authorization': \Bearer \\
-                },
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to fetch assessment');
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Get assessment error:', error);
-            throw error;
-        }
-    }
-
-    static async submitAssessmentAnswers(assessmentId, answers) {
-        const token = localStorage.getItem('authToken');
-        
-        try {
-            const response = await fetch(\\/assessments/\/submit\, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': \Bearer \\
-                },
-                body: JSON.stringify({ answers }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to submit assessment');
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Submit assessment error:', error);
-            throw error;
-        }
-    }
-
-    static async deleteAssessment(assessmentId) {
-        const token = localStorage.getItem('authToken');
-        
-        try {
-            const response = await fetch(\\/assessments/\\, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': \Bearer \\
-                },
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to delete assessment');
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Delete assessment error:', error);
-            throw error;
-        }
-    }
-}
-
-export default AssessmentService;
+export default assessmentService;

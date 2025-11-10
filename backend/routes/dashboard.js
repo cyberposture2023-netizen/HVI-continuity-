@@ -1,170 +1,66 @@
 const express = require('express');
 const router = express.Router();
 const Assessment = require('../models/Assessment');
-const User = require('../models/User');
 const auth = require('../middleware/auth');
 
-// Get dashboard data for authenticated user
+// GET /api/dashboard - Get user dashboard data
 router.get('/', auth, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const assessments = await Assessment.find({ user: req.user.id })
+            .populate('questions')
+            .sort({ createdAt: -1 });
         
-        // Get user's assessments
-        const assessments = await Assessment.find({ user: userId })
-            .sort({ createdAt: -1 })
-            .limit(10);
+        const totalAssessments = assessments.length;
+        const completedAssessments = assessments.filter(a => a.completed).length;
+        const totalQuestions = assessments.reduce((total, assessment) => 
+            total + (assessment.questions ? assessment.questions.length : 0), 0);
         
-        // Calculate statistics
-        const totalAssessments = await Assessment.countDocuments({ user: userId });
-        const completedAssessments = await Assessment.countDocuments({ 
-            user: userId, 
-            status: 'completed' 
-        });
-        const draftAssessments = await Assessment.countDocuments({ 
-            user: userId, 
-            status: 'draft' 
-        });
+        const recentAssessments = assessments.slice(0, 5);
         
-        // Calculate average scores
-        const completedAssessmentsWithScores = await Assessment.find({ 
-            user: userId, 
-            status: 'completed' 
-        });
-        
-        let totalD1 = 0, totalD2 = 0, totalD3 = 0, totalD4 = 0, totalOverall = 0;
-        let count = 0;
-        
-        completedAssessmentsWithScores.forEach(assessment => {
-            if (assessment.scores) {
-                totalD1 += assessment.scores.d1 || 0;
-                totalD2 += assessment.scores.d2 || 0;
-                totalD3 += assessment.scores.d3 || 0;
-                totalD4 += assessment.scores.d4 || 0;
-                totalOverall += assessment.scores.overall || 0;
-                count++;
-            }
-        });
-        
-        const averageScores = {
-            d1: count > 0 ? Math.round((totalD1 / count) * 100) / 100 : 0,
-            d2: count > 0 ? Math.round((totalD2 / count) * 100) / 100 : 0,
-            d3: count > 0 ? Math.round((totalD3 / count) * 100) / 100 : 0,
-            d4: count > 0 ? Math.round((totalD4 / count) * 100) / 100 : 0,
-            overall: count > 0 ? Math.round((totalOverall / count) * 100) / 100 : 0
-        };
-        
-        // Get recent activity
-        const recentAssessments = await Assessment.find({ user: userId })
-            .sort({ updatedAt: -1 })
-            .limit(5)
-            .select('title status scores updatedAt');
-        
-        const dashboardData = {
-            user: {
-                id: req.user.id,
-                username: req.user.username,
-                email: req.user.email,
-                role: req.user.role,
-                department: req.user.department
-            },
-            statistics: {
-                totalAssessments,
-                completedAssessments,
-                draftAssessments,
-                completionRate: totalAssessments > 0 ? 
-                    Math.round((completedAssessments / totalAssessments) * 100) : 0
-            },
-            scores: averageScores,
+        res.json({
+            totalAssessments,
+            completedAssessments,
+            totalQuestions,
             recentAssessments,
-            assessments: assessments.map(assessment => ({
-                id: assessment._id,
-                title: assessment.title,
-                status: assessment.status,
-                scores: assessment.scores,
-                createdAt: assessment.createdAt,
-                updatedAt: assessment.updatedAt
-            }))
-        };
-        
-        res.json(dashboardData);
+            progressPercentage: totalAssessments > 0 ? Math.round((completedAssessments / totalAssessments) * 100) : 0
+        });
     } catch (error) {
         console.error('Error fetching dashboard data:', error);
         res.status(500).json({ message: 'Server error fetching dashboard data' });
     }
 });
 
-// Get admin dashboard (admin only)
-router.get('/admin', auth, async (req, res) => {
+// GET /api/dashboard/stats - Get user statistics
+router.get('/stats', auth, async (req, res) => {
     try {
-        // Check if user is admin
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Admin access required' });
-        }
+        const assessments = await Assessment.find({ user: req.user.id });
         
-        // Get overall platform statistics
-        const totalUsers = await User.countDocuments();
-        const totalAssessments = await Assessment.countDocuments();
-        const completedAssessments = await Assessment.countDocuments({ status: 'completed' });
-        
-        // Get user growth data (last 30 days)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const newUsers = await User.countDocuments({ 
-            createdAt: { $gte: thirtyDaysAgo } 
-        });
-        
-        const newAssessments = await Assessment.countDocuments({ 
-            createdAt: { $gte: thirtyDaysAgo } 
-        });
-        
-        // Get department statistics
-        const departmentStats = await User.aggregate([
-            {
-                $group: {
-                    _id: '$department',
-                    userCount: { $sum: 1 },
-                    assessmentCount: { 
-                        $sum: { 
-                            $size: '$assessments' 
-                        } 
-                    }
+        const categoryStats = {};
+        assessments.forEach(assessment => {
+            assessment.categories.forEach(category => {
+                if (!categoryStats[category]) {
+                    categoryStats[category] = 0;
                 }
-            }
-        ]);
+                categoryStats[category]++;
+            });
+        });
         
-        // Get recent platform activity
-        const recentUsers = await User.find()
-            .sort({ createdAt: -1 })
-            .limit(5)
-            .select('username email department createdAt');
-            
-        const recentAssessments = await Assessment.find()
-            .sort({ createdAt: -1 })
-            .limit(5)
-            .populate('user', 'username email')
-            .select('title status scores.userId createdAt');
-        
-        const adminDashboardData = {
-            platformStatistics: {
-                totalUsers,
-                totalAssessments,
-                completedAssessments,
-                completionRate: totalAssessments > 0 ? 
-                    Math.round((completedAssessments / totalAssessments) * 100) : 0,
-                newUsersLast30Days: newUsers,
-                newAssessmentsLast30Days: newAssessments
-            },
-            departmentStats,
-            recentUsers,
-            recentAssessments
-        };
-        
-        res.json(adminDashboardData);
+        res.json({
+            totalAssessments: assessments.length,
+            completedAssessments: assessments.filter(a => a.completed).length,
+            categoryDistribution: categoryStats,
+            averageScore: assessments.length > 0 ? 
+                assessments.reduce((sum, a) => sum + (a.score || 0), 0) / assessments.length : 0
+        });
     } catch (error) {
-        console.error('Error fetching admin dashboard:', error);
-        res.status(500).json({ message: 'Server error fetching admin dashboard' });
+        console.error('Error fetching dashboard stats:', error);
+        res.status(500).json({ message: 'Server error fetching dashboard stats' });
     }
+});
+
+// Test route for health checks
+router.get('/test/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Dashboard route working' });
 });
 
 module.exports = router;

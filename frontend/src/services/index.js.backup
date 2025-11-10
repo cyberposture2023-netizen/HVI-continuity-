@@ -1,0 +1,18 @@
+import authService from './authService';
+import assessmentService from './assessmentService';
+import dashboardService from './dashboardService';
+import userService from './userService';
+
+export {
+    authService,
+    assessmentService,
+    dashboardService,
+    userService
+};
+
+export default {
+    authService,
+    assessmentService,
+    dashboardService,
+    userService
+};

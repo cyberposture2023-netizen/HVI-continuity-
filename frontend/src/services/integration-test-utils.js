@@ -1,4 +1,3 @@
-// Frontend Integration Test Utilities
 const API_BASE_URL = 'http://localhost:5000/api';
 
 export class IntegrationTestHelper {
@@ -8,8 +7,18 @@ export class IntegrationTestHelper {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ username, email, password }),
+            body: JSON.stringify({
+                name: username,
+                email: email,
+                password: password,
+                department: 'Testing'
+            }),
         });
+
+        if (!response.ok) {
+            throw new Error(\Registration failed: \\);
+        }
+
         return await response.json();
     }
 
@@ -19,8 +28,16 @@ export class IntegrationTestHelper {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({
+                email: email,
+                password: password
+            }),
         });
+
+        if (!response.ok) {
+            throw new Error(\Login failed: \\);
+        }
+
         return await response.json();
     }
 
@@ -33,41 +50,27 @@ export class IntegrationTestHelper {
             },
             body: JSON.stringify(assessmentData),
         });
+
+        if (!response.ok) {
+            throw new Error(\Assessment creation failed: \\);
+        }
+
         return await response.json();
     }
 
-    static async getUserAssessments(token, userId) {
-        const response = await fetch(\\\/assessments/user/\\, {
-            method: 'GET',
-            headers: {
-                'Authorization': \Bearer \\
-            },
-        });
-        return await response.json();
-    }
-
-    static async cleanupTestUser(token, userId) {
-        // This would typically call a cleanup endpoint
-        console.log('Test cleanup completed for user:', userId);
+    static async cleanupTestUser(token) {
+        // Cleanup any test data
+        try {
+            await fetch(\\\/users/test-cleanup\, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': \Bearer \\
+                },
+            });
+        } catch (error) {
+            console.log('Cleanup completed (endpoint may not exist)');
+        }
     }
 }
 
-// Mock data for integration tests
-export const testData = {
-    user: {
-        username: 'testuser_' + Date.now(),
-        email: \	est\@hvi-continuity.com\,
-        password: 'TestPass123!'
-    },
-    assessment: {
-        title: 'Integration Test Assessment',
-        description: 'Assessment created during integration testing',
-        questions: [
-            {
-                questionText: 'How are you feeling today?',
-                options: ['Excellent', 'Good', 'Fair', 'Poor'],
-                correctAnswer: 1
-            }
-        ]
-    }
-};
+export default IntegrationTestHelper;
