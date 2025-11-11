@@ -1,53 +1,33 @@
-# HVI-Continuity Platform
+# HVI Continuity Platform
 
-A 4D Human Risk Assessment system with behavioral simulations, advanced HVI scoring, and professional reporting.
+## Overview
+Healthcare Vulnerability Index (HVI) Continuity Platform with D1-D4 scoring system.
 
-## Quick Start
+## Architecture
+- Backend: Node.js/Express on port 5000
+- Frontend: React on port 3000  
+- Database: MongoDB
+- Scoring: D1-D4 maturity model
 
-### Prerequisites
-- Node.js (v16 or higher)
-- MongoDB (local instance)
-- Git
+## D1-D4 Scoring System
+- D1: Foundational capabilities
+- D2: Developing capabilities  
+- D3: Advanced capabilities
+- D4: Optimized capabilities
 
-### Development Setup
-
-1. **Start Backend Server:**
-   \\\ash
-   cd backend
-   npm run dev
-   \\\
-   OR use the script: \scripts\start-backend.bat\
-
-2. **Start Frontend Server:**
-   \\\ash
-   cd frontend
-   npm start
-   \\\
-   OR use the script: \scripts\start-frontend.bat\
-
-3. **Start Both Servers:**
-   Use the combined script: \scripts\start-development.bat\
-
-### API Endpoints
-- Health Check: \GET http://localhost:5000/api/health\
-- API Info: \GET http://localhost:5000/api\
-- Authentication: \POST http://localhost:5000/api/auth/login\
-
-### Default URLs
-- Backend API: http://localhost:5000
-- Frontend App: http://localhost:3000
-
-## Project Structure
-\\\
-hvi-continuity-platform/
-├── backend/          # Node.js/Express API
-├── frontend/         # React application
-├── docs/            # Documentation
-└── scripts/         # Development scripts
-\\\
+## Current Status
+- Basic project structure created
+- Backend and frontend foundations in place
+- Missing endpoints to be implemented:
+  - /api/dashboard/score-trend
+  - /api/dashboard/scores  
+  - /api/assessments/current
+- Dashboard trends and assessment workflow need implementation
+- Login screen needs completion
 
 ## Next Steps
-1. Ensure MongoDB is running on localhost:27017
-2. Start the backend server first
-3. Then start the frontend server
-4. Access the application at http://localhost:3000
+1. Implement data models for assessments and scores
+2. Build D1-D4 scoring algorithms
+3. Create dashboard trend visualizations
+4. Complete assessment workflow
+5. Fix login authentication

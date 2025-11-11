@@ -1,42 +1,35 @@
 {
-  "description": "HVI Continuity Platform - Live Demo Backend",
-  "name": "hvi-continuity-platform",
+  "name": "hvi-continuity-backend",
   "version": "1.0.0",
-  "license": "MIT",
-  "author": "HVI Development Team",
+  "description": "HVI Continuity Platform Backend with D1-D4 Scoring",
   "main": "server.js",
   "scripts": {
-    "pm2-start": "pm2 start ecosystem.config.js",
-    "test": "powershell -ExecutionPolicy Bypass -File test-endpoints.ps1",
-    "pm2-restart": "pm2 restart hvi-continuity-backend",
-    "test-api": "node -e \"require('./server.js\")\"",
-    "demo": "powershell -ExecutionPolicy Bypass -File launch-demo.ps1",
     "start": "node server.js",
-    "pm2-monitor": "pm2 monit",
-    "pm2-logs": "pm2 logs hvi-continuity-backend",
     "dev": "nodemon server.js",
-    "pm2-stop": "pm2 stop hvi-continuity-backend"
-  },
-  "devDependencies": {
-    "pm2": "^5.3.0",
-    "nodemon": "^3.0.1"
+    "test": "jest"
   },
   "dependencies": {
-    "compression": "^1.7.4",
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "morgan": "^1.10.0",
+    "axios": "^1.5.0",
     "bcryptjs": "^2.4.3",
-    "helmet": "^7.1.0",
-    "mongodb": "^5.7.0",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.10.0",
+    "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.2",
-    "dotenv": "^16.3.1"
+    "mongoose": "^7.5.0"
+  },
+  "devDependencies": {
+    "jest": "^29.6.2",
+    "nodemon": "^3.0.1"
   },
   "keywords": [
     "hvi",
     "continuity",
-    "api",
-    "backend",
-    "demo"
-  ]
+    "scoring",
+    "assessment"
+  ],
+  "author": "HVI Team",
+  "license": "MIT"
 }
